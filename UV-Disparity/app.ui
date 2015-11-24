@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AppClass</class>
+ <widget class="QMainWindow" name="AppClass">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>UV-Disparity</string>
+  </property>
+  <widget class="QWidget" name="centralWidget"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>600</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="action_Load_source"/>
+    <addaction name="action_Load_mask"/>
+    <addaction name="action_Remove_mask"/>
+    <addaction name="action_Load_default"/>
+    <addaction name="action_Save"/>
+   </widget>
+   <widget class="QMenu" name="menuRun">
+    <property name="title">
+     <string>Run</string>
+    </property>
+    <addaction name="actionV_Disparity"/>
+    <addaction name="actionU_Disparity"/>
+    <addaction name="actionHoughLineV_Disp"/>
+    <addaction name="actionPHoughLineV_Disp"/>
+    <addaction name="actionCudaHoughLineV_Disp"/>
+    <addaction name="actionCudaPHoughLineV_Disp"/>
+   </widget>
+   <addaction name="menu_File"/>
+   <addaction name="menuRun"/>
+  </widget>
+  <action name="actionV_Disparity">
+   <property name="text">
+    <string>V-Disparity</string>
+   </property>
+  </action>
+  <action name="actionU_Disparity">
+   <property name="text">
+    <string>U-Disparity</string>
+   </property>
+  </action>
+  <action name="actionHoughLineV_Disp">
+   <property name="text">
+    <string>HoughLineV_Disp</string>
+   </property>
+  </action>
+  <action name="actionPHoughLineV_Disp">
+   <property name="text">
+    <string>PHoughLineV_Disp</string>
+   </property>
+  </action>
+  <action name="actionCudaHoughLineV_Disp">
+   <property name="text">
+    <string>CudaHoughLineV_Disp</string>
+   </property>
+  </action>
+  <action name="actionCudaPHoughLineV_Disp">
+   <property name="text">
+    <string>CudaPHoughLineV_Disp</string>
+   </property>
+  </action>
+  <action name="action_Load_mask">
+   <property name="text">
+    <string>&amp;Load mask</string>
+   </property>
+  </action>
+  <action name="action_Load_source">
+   <property name="text">
+    <string>&amp;Load source</string>
+   </property>
+  </action>
+  <action name="action_Load_default">
+   <property name="text">
+    <string>&amp;Load default</string>
+   </property>
+  </action>
+  <action name="action_Remove_mask">
+   <property name="text">
+    <string>&amp;Remove mask</string>
+   </property>
+  </action>
+  <action name="action_Save">
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources>
+  <include location="app.qrc"/>
+ </resources>
+ <connections/>
+</ui>
