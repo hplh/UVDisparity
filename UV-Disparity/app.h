@@ -26,48 +26,52 @@ public:
 	~App();
 
 private slots:
-	void loadDefault();
-	void loadSource();
-	void loadMask();
-	void removeMask();
-	void saveResult();
+	void LoadDisparity();
+	void LoadSource();
+	void LoadMask();
+	void RemoveMask();
 
-	void v_disparityCall();
-	void u_disparityCall();
-	void houghLinesV_DispCall();
-	void probabilisticHoughLinesV_DispCall();
-	void cudaHoughLinesV_DispCall();
-	void cudaProbabilisticHoughLinesV_DispCall();
+	void VDisparityCall();
+	void UDisparityCall();
+	void HoughLinesDetectionCall();
+	void ProbabilisticHoughLinesDetectionCall();
+	void CudaHoughLinesDetectionCall();
+	void CudaProbabilisticHoughLinesDetectionCall();
 
 private:
 	QImage *source = NULL;
+	QImage *disparity = NULL;
 	QImage *mask = NULL;
+
+	QImage *v_disparity = NULL;
+	QImage *v_disparityNormalized = NULL;
+
+	QImage *u_disparity = NULL;
+
+	QImage *pointsOnLine = NULL;
+	QImage *groundPlane = NULL;
+
 	QImage *result = NULL;
-
-	QImage *v_disparityImage = NULL;
-	QImage *v_disparity_N_Image = NULL;
-
-	QImage *u_disparityImage = NULL;
 
 	Ui::AppClass ui;
 
 	QWidget *centralWidget;
 	QLayout *centralLayout;
 
-	QLabel *sourceLabel;
-	QLabel *maskLabel;
-	QLabel *resultLabel;
-	QLabel *v_disparityLabel;
-	QLabel *v_disparity_N_Label;
-	QLabel *u_disparityLabel;
+	QLabel *label_0x0;
+	QLabel *label_0x1;
+	QLabel *label_0x2;
+	QLabel *label_1x0;
+	QLabel *label_2x0;
+	QLabel *label_2x1;
+	QLabel *label_2x2;
+	QLabel *label_3x0;
+	QLabel *label_3x1;
 
 	QWidget *contentWidget;
 	QGridLayout *contentLayout;
 
 	QLabel *elapsedTimeLabel;
-
-	void pointsOnLine(const cv::Vec4i line, std::vector<cv::Vec2i> &points, const double threshold = 1);
-	void computeResult(const cv::Vec4i line, const double threshold = 0.01);
 };
 
 #endif // App_H

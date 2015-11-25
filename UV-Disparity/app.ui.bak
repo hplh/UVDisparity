@@ -27,10 +27,11 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="action_Load_disparity"/>
-    <addaction name="action_Load_mask"/>
     <addaction name="action_Load_source"/>
+    <addaction name="action_Load_mask"/>
     <addaction name="action_Remove_mask"/>
+    <addaction name="action_Load_default"/>
+    <addaction name="action_Save"/>
    </widget>
    <widget class="QMenu" name="menuRun">
     <property name="title">
@@ -86,14 +87,19 @@
     <string>&amp;Load source</string>
    </property>
   </action>
+  <action name="action_Load_default">
+   <property name="text">
+    <string>&amp;Load default</string>
+   </property>
+  </action>
   <action name="action_Remove_mask">
    <property name="text">
     <string>&amp;Remove mask</string>
    </property>
   </action>
-  <action name="action_Load_disparity">
+  <action name="action_Save">
    <property name="text">
-    <string>&amp;Load disparity</string>
+    <string>&amp;Save</string>
    </property>
   </action>
  </widget>

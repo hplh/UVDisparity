@@ -32,9 +32,8 @@ public:
     QAction *actionCudaPHoughLineV_Disp;
     QAction *action_Load_mask;
     QAction *action_Load_source;
-    QAction *action_Load_default;
     QAction *action_Remove_mask;
-    QAction *action_Save;
+    QAction *action_Load_disparity;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menu_File;
@@ -61,12 +60,10 @@ public:
         action_Load_mask->setObjectName(QStringLiteral("action_Load_mask"));
         action_Load_source = new QAction(AppClass);
         action_Load_source->setObjectName(QStringLiteral("action_Load_source"));
-        action_Load_default = new QAction(AppClass);
-        action_Load_default->setObjectName(QStringLiteral("action_Load_default"));
         action_Remove_mask = new QAction(AppClass);
         action_Remove_mask->setObjectName(QStringLiteral("action_Remove_mask"));
-        action_Save = new QAction(AppClass);
-        action_Save->setObjectName(QStringLiteral("action_Save"));
+        action_Load_disparity = new QAction(AppClass);
+        action_Load_disparity->setObjectName(QStringLiteral("action_Load_disparity"));
         centralWidget = new QWidget(AppClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         AppClass->setCentralWidget(centralWidget);
@@ -81,11 +78,10 @@ public:
 
         menuBar->addAction(menu_File->menuAction());
         menuBar->addAction(menuRun->menuAction());
-        menu_File->addAction(action_Load_source);
+        menu_File->addAction(action_Load_disparity);
         menu_File->addAction(action_Load_mask);
+        menu_File->addAction(action_Load_source);
         menu_File->addAction(action_Remove_mask);
-        menu_File->addAction(action_Load_default);
-        menu_File->addAction(action_Save);
         menuRun->addAction(actionV_Disparity);
         menuRun->addAction(actionU_Disparity);
         menuRun->addAction(actionHoughLineV_Disp);
@@ -109,9 +105,8 @@ public:
         actionCudaPHoughLineV_Disp->setText(QApplication::translate("AppClass", "CudaPHoughLineV_Disp", 0));
         action_Load_mask->setText(QApplication::translate("AppClass", "&Load mask", 0));
         action_Load_source->setText(QApplication::translate("AppClass", "&Load source", 0));
-        action_Load_default->setText(QApplication::translate("AppClass", "&Load default", 0));
         action_Remove_mask->setText(QApplication::translate("AppClass", "&Remove mask", 0));
-        action_Save->setText(QApplication::translate("AppClass", "&Save", 0));
+        action_Load_disparity->setText(QApplication::translate("AppClass", "&Load disparity", 0));
         menu_File->setTitle(QApplication::translate("AppClass", "&File", 0));
         menuRun->setTitle(QApplication::translate("AppClass", "Run", 0));
     } // retranslateUi

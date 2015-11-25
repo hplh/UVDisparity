@@ -7,10 +7,10 @@
 #include <QImage>
 #include <QColor>
 
-void v_disparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds);
-void v_disparity(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds);
+void VDisparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds);
+void VDisparity(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds);
 
-void v_disparity_N(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds);
-void v_disparity_N(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds);
+void VDisparityNormalized(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds);
+void VDisparityNormalized(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds);
 
-void u_disparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds);
+void UDisparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds);

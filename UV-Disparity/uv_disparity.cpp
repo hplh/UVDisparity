@@ -1,6 +1,6 @@
 #include "uv_disparity.h"
 
-void v_disparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
 {
 	int width = source.width();
 	int height = source.height();
@@ -32,7 +32,7 @@ void v_disparity(const QImage &source, QImage &result, std::chrono::duration<dou
 	elapsed_seconds = end - start;
 }
 
-void v_disparity(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparity(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds)
 {
 	int width = source.width();
 	int height = source.height();
@@ -64,7 +64,7 @@ void v_disparity(const QImage &source, const QImage &mask, QImage &result, std::
 	elapsed_seconds = end - start;
 }
 
-void v_disparity_N(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparityNormalized(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
 {
 	int width = source.width();
 	int height = source.height();
@@ -75,7 +75,7 @@ void v_disparity_N(const QImage &source, QImage &result, std::chrono::duration<d
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();
 
-	for (int row = startRow; row < height; ++row)
+	for (int row = 0; row < height; ++row)
 	{
 		for (int col = 0; col < width; ++col)
 		{
@@ -111,7 +111,7 @@ void v_disparity_N(const QImage &source, QImage &result, std::chrono::duration<d
 	elapsed_seconds = end - start;
 }
 
-void v_disparity_N(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparityNormalized(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds)
 {
 	int width = source.width();
 	int height = source.height();
@@ -158,7 +158,7 @@ void v_disparity_N(const QImage &source, const QImage &mask, QImage &result, std
 	elapsed_seconds = end - start;
 }
 
-void u_disparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds) {
+void UDisparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds) {
 	int width = source.width();
 	int height = source.height();
 

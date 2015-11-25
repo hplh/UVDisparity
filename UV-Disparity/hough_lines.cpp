@@ -1,6 +1,6 @@
 #include "hough_lines.h"
 
-void houghLines(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void HoughLinesDetection(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
 {
 	// Qsource source to Mat src considering Qsource::Format_RGB888
 	QImage swappedSource = source.rgbSwapped();
@@ -41,7 +41,7 @@ void houghLines(const QImage &source, QImage &result, std::chrono::duration<doub
 	elapsed_seconds = end - start;
 }
 
-void probabilisticHoughLines(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds)
+void ProbabilisticHoughLinesDetection(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds)
 {
 	// Qsource source to Mat src considering Qsource::Format_RGB888
 	QImage swappedSource = source.rgbSwapped();
@@ -94,7 +94,7 @@ void probabilisticHoughLines(const QImage &source, QImage &result, cv::Vec4i &se
 	elapsed_seconds = end - start;
 }
 
-void cudaHoughLines(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void CudaHoughLinesDetection(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
 {
 	QImage swappedSource = source.rgbSwapped();
 	cv::Mat src = cv::Mat(swappedSource.height(), swappedSource.width(), CV_8UC3, const_cast<uchar*>(swappedSource.bits()), swappedSource.bytesPerLine()); // CV_8UC3 = 8-bit, 3 channel
@@ -138,7 +138,7 @@ void cudaHoughLines(const QImage &source, QImage &result, std::chrono::duration<
 	elapsed_seconds = end - start;
 }
 
-void cudaProbabilisticHoughLines(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds)
+void CudaProbabilisticHoughLinesDetection(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds)
 {
 	QImage swappedSource = source.rgbSwapped();
 	cv::Mat src = cv::Mat(swappedSource.height(), swappedSource.width(), CV_8UC3, const_cast<uchar*>(swappedSource.bits()), swappedSource.bytesPerLine()); // CV_8UC3 = 8-bit, 3 channel
@@ -200,4 +200,120 @@ void cudaProbabilisticHoughLines(const QImage &source, QImage &result, cv::Vec4i
 	result = QImage((uchar *)res.data, res.cols, res.rows, res.step, QImage::Format_RGB888).rgbSwapped();
 
 	elapsed_seconds = end - start;
+}
+
+void PointsOnLine(const QImage &source, const cv::Vec4i line, std::vector<cv::Vec2i> &points, const double threshold)
+{
+
+	int width = source.width();
+	int height = source.height();
+	QColor houghLineColor(255, 0, 0);
+	QColor black(0, 0, 0);
+
+	double a = (double)(line[3] - line[1]) / (line[2] - line[0]);
+	double b = (double)line[1] - a * line[0];
+
+	double distance;
+
+	int rowStart = (line[1] < line[3]) ? line[1] : line[3];
+	int colStart = (line[0] < line[2]) ? line[0] : line[2];
+
+	for (int row = 0; row < height; ++row)
+	{
+		for (int col = 0; col < width; ++col)
+		{
+			double x0 = qGray(source.pixel(col, row));
+			double y0 = row;
+
+			distance = fabs((double)y0 - a * x0 - b) / sqrt(1.0 + a * a);
+			if (row > rowStart && col > colStart && distance < threshold) {
+				points.push_back(cv::Vec2i(col, row));
+			}
+		}
+	}
+}
+
+void GroundPlane(const QImage &source, std::vector<cv::Vec2i> &points, std::vector<cv::Vec2i> &groundPlanePoints, const double threshold)
+{
+	int width = source.width();
+	int height = source.height();
+
+	// TUI camera
+	double f = 141.29; // focal length
+	double B = 0.1197; // base line
+	double c_u = 163.4;
+	double c_v = 119.6;
+
+	if (points.size() == 0)
+	{
+		return;
+	}
+
+	// fit plane in the 3D point cloud formed by the found ground plane pixels
+	// build 3D point cloud
+	std::vector <cv::Vec3f> pointCloud;
+	for (std::vector<cv::Vec2i>::iterator it = points.begin(); it != points.end(); ++it)
+	{
+		int u = (*it)[0];
+		int v = (*it)[1];
+		double x, y, z;
+		int gray = qGray(source.pixel(u, v));
+		if (gray != 0)
+		{
+			z = f * B / gray;
+			x = ((double)u - c_u) * z / f;
+			y = ((double)v - c_v) * z / f;
+			pointCloud.push_back(cv::Vec3f(x, y, z));
+		}
+	}
+
+	// find least squared plane
+	CvMat *res = cvCreateMat(3, 1, CV_32FC1); // a, b, c for plane ax + by + c = 0;
+	// matA * res = matB;
+	CvMat *matA = cvCreateMat(pointCloud.size(), 3, CV_32FC1);
+	CvMat *matB = cvCreateMat(pointCloud.size(), 1, CV_32FC1);
+	int i = 0;
+	for (std::vector<cv::Vec3f>::iterator it = pointCloud.begin(); it != pointCloud.end(); ++it)
+	{
+		cvmSet(matA, i, 0, (*it)[0]);
+		cvmSet(matA, i, 1, (*it)[1]);
+		cvmSet(matA, i, 2, 1);
+
+		cvmSet(matB, i, 0, (*it)[2]);
+
+		++i;
+	}
+
+	// solve the ecuation matA * res = matB;
+	cvSolve(matA, matB, res, CV_SVD);
+
+	// ax + by + c = z
+	double a, b, c;
+	a = cvmGet(res, 0, 0);
+	b = cvmGet(res, 1, 0);
+	c = cvmGet(res, 2, 0);
+
+	// find all 3D points that lie on the plane within a threshold distance
+	for (int row = 0; row < height; ++row)
+	{
+		for (int col = 0; col < width; ++col)
+		{
+			double x, y, z, dist;
+			int gray = qGray(source.pixel(col, row));
+
+			if (gray != 0)
+			{
+				z = f * B / gray;
+				x = ((double)col - c_u) * z / f;
+				y = ((double)row - c_v) * z / f;
+
+				dist = fabs(a * x + b * y - z + c) / sqrt(a * a + b * b + c * c);
+
+				if (dist <= threshold)
+				{
+					groundPlanePoints.push_back(cv::Vec2i(col, row));
+				}
+			}
+		}
+	}
 }
