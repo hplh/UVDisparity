@@ -9,6 +9,7 @@
 #include <QtWidgets/qPushButton>
 #include <QtWidgets/qlayout>
 #include <qcolor.h>
+#include <qpainter.h>
 
 #include <chrono>
 #include <ctime>
@@ -16,6 +17,7 @@
 #include "ui_app.h"
 #include "uv_disparity.h"
 #include "hough_lines.h"
+#include "ground_plane.h"
 
 class App : public QMainWindow
 {
@@ -72,6 +74,9 @@ private:
 	QGridLayout *contentLayout;
 
 	QLabel *elapsedTimeLabel;
+
+	void PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, const char* method);
+	void VDisparityLineToGroundPlane(const cv::Vec4i line);
 };
 
 #endif // App_H

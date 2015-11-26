@@ -1,6 +1,6 @@
 #include "uv_disparity.h"
 
-void VDisparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds, const unsigned int threshold)
 {
 	int width = source.width();
 	int height = source.height();
@@ -23,6 +23,10 @@ void VDisparity(const QImage &source, QImage &result, std::chrono::duration<doub
 
 		for (int col = 0; col < 256; ++col)
 		{
+			if (rowHistogram[col] < threshold)
+			{
+				rowHistogram[col] = 0;
+			}
 			QColor color(rowHistogram[col], rowHistogram[col], rowHistogram[col]);
 			result.setPixel(col, row, color.rgb());
 		}
@@ -32,7 +36,7 @@ void VDisparity(const QImage &source, QImage &result, std::chrono::duration<doub
 	elapsed_seconds = end - start;
 }
 
-void VDisparity(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparity(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds, const unsigned int threshold)
 {
 	int width = source.width();
 	int height = source.height();
@@ -55,6 +59,10 @@ void VDisparity(const QImage &source, const QImage &mask, QImage &result, std::c
 
 		for (int col = 0; col < 256; ++col)
 		{
+			if (rowHistogram[col] < threshold)
+			{
+				rowHistogram[col] = 0;
+			}
 			QColor color(rowHistogram[col], rowHistogram[col], rowHistogram[col]);
 			result.setPixel(col, row, color.rgb());
 		}
@@ -64,16 +72,13 @@ void VDisparity(const QImage &source, const QImage &mask, QImage &result, std::c
 	elapsed_seconds = end - start;
 }
 
-void VDisparityNormalized(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparityNormalized(const QImage &source, QImage &result, const unsigned int threshold)
 {
 	int width = source.width();
 	int height = source.height();
 	int startRow = height / 2;
 
 	int max = 0;
-
-	std::chrono::time_point<std::chrono::system_clock> start, end;
-	start = std::chrono::system_clock::now();
 
 	for (int row = 0; row < height; ++row)
 	{
@@ -101,25 +106,23 @@ void VDisparityNormalized(const QImage &source, QImage &result, std::chrono::dur
 
 		for (int col = 0; col < 256; ++col)
 		{
+			if (rowHistogram[col] < threshold)
+			{
+				rowHistogram[col] = 0;
+			}
 			double colorVal = log(rowHistogram[col] + 1) / log(max) * 255;
 			QColor color(colorVal, colorVal, colorVal);
 			result.setPixel(col, row, color.rgb());
 		}
 	}
-
-	end = std::chrono::system_clock::now();
-	elapsed_seconds = end - start;
 }
 
-void VDisparityNormalized(const QImage &source, const QImage &mask, QImage &result, std::chrono::duration<double> &elapsed_seconds)
+void VDisparityNormalized(const QImage &source, const QImage &mask, QImage &result, const unsigned int threshold)
 {
 	int width = source.width();
 	int height = source.height();
 
 	int max = 0;
-
-	std::chrono::time_point<std::chrono::system_clock> start, end;
-	start = std::chrono::system_clock::now();
 
 	for (int row = 0; row < height; ++row)
 	{
@@ -148,14 +151,15 @@ void VDisparityNormalized(const QImage &source, const QImage &mask, QImage &resu
 
 		for (int col = 0; col < 256; ++col)
 		{
+			if (rowHistogram[col] < threshold)
+			{
+				rowHistogram[col] = 0;
+			}
 			double colorVal = log(rowHistogram[col] + 1) / log(max) * 255;
 			QColor color(colorVal, colorVal, colorVal);
 			result.setPixel(col, row, color.rgb());
 		}
 	}
-
-	end = std::chrono::system_clock::now();
-	elapsed_seconds = end - start;
 }
 
 void UDisparity(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds) {

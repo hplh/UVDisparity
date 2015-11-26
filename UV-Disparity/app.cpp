@@ -147,28 +147,19 @@ void App::VDisparityCall()
 		if (mask == NULL) 
 		{
 			VDisparity(*disparity, *v_disparity, elapsed_seconds);
-
-			char txt[32];
-			sprintf(txt, "V-Disparity: %f", elapsed_seconds.count());
-
-			elapsedTimeLabel->setText(QString(txt).append(" s"));
-
-			VDisparityNormalized(*disparity, *v_disparityNormalized, elapsed_seconds);
+			VDisparityNormalized(*disparity, *v_disparityNormalized);
 		}
 		else
 		{
 			VDisparity(*disparity, *mask, *v_disparity, elapsed_seconds);
-
-			char txt[32];
-			sprintf(txt, "V-Disparity: %f", elapsed_seconds.count());
-
-			elapsedTimeLabel->setText(QString(txt).append(" s"));
-
-			VDisparityNormalized(*disparity, *mask, *v_disparityNormalized, elapsed_seconds);
+			VDisparityNormalized(*disparity, *mask, *v_disparityNormalized);
 		}
+
+		PrintElapsedTime(elapsed_seconds, "V-Disparity");
 
 		label_0x2->setPixmap(QPixmap::fromImage(*v_disparity));
 		label_0x2->adjustSize();
+
 		label_2x2->setPixmap(QPixmap::fromImage(*v_disparityNormalized));
 		label_2x2->adjustSize();
 	}
@@ -184,10 +175,8 @@ void App::UDisparityCall()
 
 		UDisparity(*disparity, *u_disparity, elapsed_seconds);
 
-		char txt[32];
-		sprintf(txt, "U-Disparity: %f", elapsed_seconds.count());
+		PrintElapsedTime(elapsed_seconds, "U-Disparity");
 
-		elapsedTimeLabel->setText(QString(txt).append(" s"));
 		label_1x0->setPixmap(QPixmap::fromImage(*u_disparity));
 		label_1x0->adjustSize();
 	}
@@ -202,9 +191,7 @@ void App::HoughLinesDetectionCall()
 
 		HoughLinesDetection(*v_disparity, img, elapsed_seconds);
 
-		char txt[128];
-		sprintf(txt, "Hough Lines V-Disparity: %f", elapsed_seconds.count());
-		elapsedTimeLabel->setText(QString(txt).append(" s"));
+		PrintElapsedTime(elapsed_seconds, "Hough Lines");
 
 		label_2x2->setPixmap(QPixmap::fromImage(img));
 		label_2x2->adjustSize();
@@ -221,44 +208,12 @@ void App::ProbabilisticHoughLinesDetectionCall()
 
 		ProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds);
 
-		char txt[128];
-		sprintf(txt, "Probabilistic Hough Lines V-Disparity: %f", elapsed_seconds.count());
-		elapsedTimeLabel->setText(QString(txt).append(" s"));
-		
+		PrintElapsedTime(elapsed_seconds, "Probabilistic Hough Lines");
+
 		label_2x2->setPixmap(QPixmap::fromImage(img));
 		label_2x2->adjustSize();
 
-		// find all points that lie on the detected line within a threshold distance
-		std::vector<cv::Vec2i> points;
-		PointsOnLine(*disparity, line, points);
-
-		pointsOnLine = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
-		pointsOnLine->fill(0);
-		for (std::vector<cv::Vec2i>::iterator it = points.begin(); it != points.end(); ++it)
-		{
-			int col = (*it)[0];
-			int row = (*it)[1];
-			pointsOnLine->setPixel(col, row, disparity->pixel(col, row));
-		}
-
-		label_2x1->setPixmap(QPixmap::fromImage(*pointsOnLine));
-		label_2x1->adjustSize();
-
-		// find ground plane 
-		std::vector<cv::Vec2i> groundPlanePoints;
-		GroundPlane(*disparity, points, groundPlanePoints);
-
-		groundPlane = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
-		groundPlane->fill(0);
-		for (std::vector<cv::Vec2i>::iterator it = groundPlanePoints.begin(); it != groundPlanePoints.end(); ++it)
-		{
-			int col = (*it)[0];
-			int row = (*it)[1];
-			groundPlane->setPixel(col, row, disparity->pixel(col, row));
-		}
-
-		label_2x0->setPixmap(QPixmap::fromImage(*groundPlane));
-		label_2x0->adjustSize();
+		VDisparityLineToGroundPlane(line);
 	}
 }
 
@@ -271,9 +226,7 @@ void App::CudaHoughLinesDetectionCall()
 
 		CudaHoughLinesDetection(*v_disparity, img, elapsed_seconds);
 
-		char txt[128];
-		sprintf(txt, "Cuda Hough Lines V-Disparity: %f", elapsed_seconds.count());
-		elapsedTimeLabel->setText(QString(txt).append(" s"));
+		PrintElapsedTime(elapsed_seconds, "Cuda Hough Lines");
 
 		label_2x2->setPixmap(QPixmap::fromImage(img));
 		label_2x2->adjustSize();
@@ -290,44 +243,74 @@ void App::CudaProbabilisticHoughLinesDetectionCall()
 
 		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds);
 
-		char txt[128];
-		sprintf(txt, "Probabilistic Hough Lines V-Disparity: %f", elapsed_seconds.count());
-		elapsedTimeLabel->setText(QString(txt).append(" s"));
+		PrintElapsedTime(elapsed_seconds, "Cuda Probabilistic Hough Lines");
 
 		label_2x2->setPixmap(QPixmap::fromImage(img));
 		label_2x2->adjustSize();
 
-		// find all points that lie on the detected line within a threshold distance
-		std::vector<cv::Vec2i> points;
-		PointsOnLine(*disparity, line, points);
+		VDisparityLineToGroundPlane(line);
+	}	
+}
 
-		pointsOnLine = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
-		pointsOnLine->fill(0);
-		for (std::vector<cv::Vec2i>::iterator it = points.begin(); it != points.end(); ++it)
-		{
-			int col = (*it)[0];
-			int row = (*it)[1];
-			pointsOnLine->setPixel(col, row, disparity->pixel(col, row));
-		}
+void App::PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, const char* method)
+{
+	char txt[128];
+	sprintf(txt, "%s: %f", method, elapsed_seconds.count());
+	elapsedTimeLabel->setText(QString(txt).append(" s"));
+}
 
-		label_2x1->setPixmap(QPixmap::fromImage(*pointsOnLine));
-		label_2x1->adjustSize();
+void App::VDisparityLineToGroundPlane(const cv::Vec4i line)
+{
+	// find all points that lie on the detected line within a threshold distance
+	std::vector<cv::Vec2i> points;
+	PointsOnLine(*disparity, line, points);
 
-		// find ground plane 
-		std::vector<cv::Vec2i> groundPlanePoints;
-		GroundPlane(*disparity, points, groundPlanePoints);
+	pointsOnLine = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
+	pointsOnLine->fill(0);
+	for (std::vector<cv::Vec2i>::iterator it = points.begin(); it != points.end(); ++it)
+	{
+		int col = (*it)[0];
+		int row = (*it)[1];
+		pointsOnLine->setPixel(col, row, disparity->pixel(col, row));
+	}
 
-		groundPlane = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
-		groundPlane->fill(0);
+	label_2x1->setPixmap(QPixmap::fromImage(*pointsOnLine));
+	label_2x1->adjustSize();
+
+	// find ground plane 
+	std::vector<cv::Vec2i> groundPlanePoints;
+	GroundPlane(*disparity, points, groundPlanePoints);
+
+	groundPlane = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
+	groundPlane->fill(0);
+
+	for (std::vector<cv::Vec2i>::iterator it = groundPlanePoints.begin(); it != groundPlanePoints.end(); ++it)
+	{
+		int col = (*it)[0];
+		int row = (*it)[1];
+		groundPlane->setPixel(col, row, disparity->pixel(col, row));
+	}
+
+	label_2x0->setPixmap(QPixmap::fromImage(*groundPlane));
+	label_2x0->adjustSize();
+
+	// paint detected ground plane on result image
+	if (source != NULL)
+	{
+		result = new QImage(source->convertToFormat(QImage::Format_ARGB32_Premultiplied));
+		QPainter painter(result);
+		painter.setPen(QColor(255, 0, 0, 128));
+
 		for (std::vector<cv::Vec2i>::iterator it = groundPlanePoints.begin(); it != groundPlanePoints.end(); ++it)
 		{
 			int col = (*it)[0];
 			int row = (*it)[1];
-			groundPlane->setPixel(col, row, disparity->pixel(col, row));
+			painter.drawPoint(col, row);
 		}
 
-		label_2x0->setPixmap(QPixmap::fromImage(*groundPlane));
-		label_2x0->adjustSize();
+		painter.end();
+		label_3x0->setPixmap(QPixmap::fromImage(*result));
+		label_3x0->adjustSize();
 	}
 }
 
