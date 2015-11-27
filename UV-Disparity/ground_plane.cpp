@@ -1,5 +1,40 @@
 #include "ground_plane.h"
 
+void PointsOnLineLine(const QImage &source, const cv::Vec4i line, std::vector<cv::Vec2i> &points, const double threshold)
+{
+
+	int width = source.width();
+	int height = source.height();
+	QColor houghLineColor(255, 0, 0);
+	QColor black(0, 0, 0);
+
+	double a = (double)(line[3] - line[1]) / (line[2] - line[0]);
+	double b = (double)line[1] - a * line[0];
+
+	double distance;
+
+	int rowStart = (line[1] < line[3]) ? line[1] : line[3];
+	int colStart = (line[0] < line[2]) ? line[0] : line[2];
+
+	for (int row = 0; row < height; ++row)
+	{
+		for (int col = 0; col < width; ++col)
+		{
+			double x0 = col;//qGray(source.pixel(col, row));
+			double y0 = row;
+
+			if (row > rowStart && col > colStart)
+			{
+				distance = fabs((double)y0 - a * x0 - b) / sqrt(1.0 + a * a);
+				if (distance <= threshold) {
+					points.push_back(cv::Vec2i(col, row));
+				}
+			}
+		}
+	}
+}
+
+
 void PointsOnLine(const QImage &source, const cv::Vec4i line, std::vector<cv::Vec2i> &points, const double threshold)
 {
 
@@ -23,9 +58,12 @@ void PointsOnLine(const QImage &source, const cv::Vec4i line, std::vector<cv::Ve
 			double x0 = qGray(source.pixel(col, row));
 			double y0 = row;
 
-			distance = fabs((double)y0 - a * x0 - b) / sqrt(1.0 + a * a);
-			if (row > rowStart && col > colStart && distance < threshold) {
-				points.push_back(cv::Vec2i(col, row));
+			if (row > rowStart && col > colStart)
+			{
+				distance = fabs((double)y0 - a * x0 - b) / sqrt(1.0 + a * a);
+				if (distance < threshold) {
+					points.push_back(cv::Vec2i(col, row));
+				}
 			}
 		}
 	}
@@ -37,10 +75,15 @@ void GroundPlane(const QImage &source, std::vector<cv::Vec2i> &points, std::vect
 	int height = source.height();
 
 	// TUI camera
-	double f = 141.29; // focal length
-	double B = 0.1197; // base line
-	double c_u = 163.4;
-	double c_v = 119.6;
+	//double f = 141.29; // focal length
+	//double B = 0.1197; // base line
+	//double c_u = 163.4;
+	//double c_v = 119.6;
+
+	double f = 486.24;
+	double B = 0.119947;
+	double c_u = 320;
+	double c_v = 240;
 
 	if (points.size() == 0)
 	{

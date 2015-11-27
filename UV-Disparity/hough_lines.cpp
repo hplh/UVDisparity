@@ -1,4 +1,5 @@
 #include "hough_lines.h"
+#include "ground_plane.h"
 
 void HoughLinesDetection(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds)
 {
@@ -147,7 +148,39 @@ void CudaHoughLinesDetection(const QImage &source, QImage &result, std::chrono::
 	elapsed_seconds = end - start;
 }
 
-void CudaProbabilisticHoughLinesDetection(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds)
+
+unsigned int lineCost(const QImage &source, cv::Vec4i &line, unsigned short int thresholdHoughThickness)
+{
+	std::vector<cv::Vec2i> points;
+	PointsOnLineLine(source, line, points, thresholdHoughThickness);
+
+	unsigned int cost = 0;
+
+	for (auto currentPoint = points.begin(); currentPoint != points.end(); ++currentPoint)
+	{
+		cost += source.pixel((*currentPoint)[0], (*currentPoint)[1]);
+	}
+
+	return cost;
+}
+
+void getBestLine(const QImage &source, std::vector<cv::Vec4i> lines, cv::Vec4i &bestLine,unsigned short int thresholdHoughThickness)
+{
+	//cv::Vec4i bestLine;
+	unsigned int bestCost = 0;
+
+	for (auto currentLine = lines.begin(); currentLine != lines.end(); ++currentLine)
+	{
+		unsigned int currentLineCost = lineCost(source, *currentLine, thresholdHoughThickness);
+		if (currentLineCost > bestCost)
+		{
+			bestCost = currentLineCost;
+			bestLine = *currentLine;
+		}
+	}
+}
+
+void CudaProbabilisticHoughLinesDetection(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds, unsigned short int thresholdHoughThickness)
 {
 	QImage swappedSource = source.rgbSwapped();
 	cv::Mat src = cv::Mat(swappedSource.height(), swappedSource.width(), CV_8UC3, const_cast<uchar*>(swappedSource.bits()), swappedSource.bytesPerLine()); // CV_8UC3 = 8-bit, 3 channel
@@ -183,27 +216,25 @@ void CudaProbabilisticHoughLinesDetection(const QImage &source, QImage &result, 
 	{
 		double max_len = 0;
 		double len;
-		for (size_t i = 0; i < lines_gpu.size(); i++)
-		{
-			cv::Vec4i l = lines_gpu[i];
-			len = sqrt((l[2] - l[0]) * (l[2] - l[0]) + (l[3] - l[1]) * (l[3] - l[1]));
-			if (len > max_len) {
-				max_len = len;
-				index = i;
-			}
-		}
+		//for (size_t i = 0; i < lines_gpu.size(); i++)
+		//{
+		//	cv::Vec4i l = lines_gpu[i];
+		//	len = sqrt((l[2] - l[0]) * (l[2] - l[0]) + (l[3] - l[1]) * (l[3] - l[1]));
+		//	if (len > max_len) {
+		//		max_len = len;
+		//		index = i;
+		//	}
+		//}
+		getBestLine(source, lines_gpu, selectedLine, thresholdHoughThickness);
+
+		// paint detected line
+		line(res, cv::Point(selectedLine[0], selectedLine[1]), cv::Point(selectedLine[2], selectedLine[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
 	}
 
 	end = std::chrono::high_resolution_clock::now();
 
-	// paint detected line
-	if (index != -1)
-	{
-		selectedLine = lines_gpu[index];
-		line(res, cv::Point(selectedLine[0], selectedLine[1]), cv::Point(selectedLine[2], selectedLine[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
-	}
-
-	//// paint detected lines
+	
+	// paint detected lines
 	//for (size_t i = 0; i < lines_gpu.size(); i++)
 	//{
 	//	cv::Vec4i l = lines_gpu[i];

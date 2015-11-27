@@ -32,6 +32,7 @@ private slots:
 	void LoadSource();
 	void LoadMask();
 	void RemoveMask();
+	void LoadDirectory();
 
 	void VDisparityCall();
 	void UDisparityCall();
@@ -39,6 +40,8 @@ private slots:
 	void ProbabilisticHoughLinesDetectionCall();
 	void CudaHoughLinesDetectionCall();
 	void CudaProbabilisticHoughLinesDetectionCall();
+
+	void setHoughThreshSliderValue(int);
 
 private:
 	QImage *source = NULL;
@@ -74,6 +77,8 @@ private:
 	QGridLayout *contentLayout;
 
 	QLabel *elapsedTimeLabel;
+
+	QSlider *houghThreshSlider;
 
 	void PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, const char* method);
 	void VDisparityLineToGroundPlane(const cv::Vec4i line);

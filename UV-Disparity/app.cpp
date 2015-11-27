@@ -1,5 +1,9 @@
 #include "app.h"
 
+#include <iostream>
+#include <QDirIterator>
+
+
 App::App(QWidget *parent)
 	: QMainWindow(parent)
 {
@@ -59,6 +63,16 @@ App::App(QWidget *parent)
 	label_3x1->setScaledContents(true);
 	contentLayout->addWidget(label_3x1, 3, 1);
 
+
+	houghThreshSlider = new QSlider(Qt::Vertical);
+	houghThreshSlider->setRange(0, 20);
+	houghThreshSlider->setTickPosition(QSlider::TicksRight);
+	houghThreshSlider->setValue(0);
+	//houghThreshSlider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
+
+	connect(houghThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(setHoughThreshSliderValue(int)));
+	contentLayout->addWidget(houghThreshSlider, 2, 3);
+
 	contentWidget->setLayout(contentLayout);
 
 	centralLayout->addWidget(elapsedTimeLabel);
@@ -71,6 +85,8 @@ App::App(QWidget *parent)
 	connect(ui.action_Load_source, SIGNAL(triggered()), this, SLOT(LoadSource()));
 	connect(ui.action_Load_mask, SIGNAL(triggered()), this, SLOT(LoadMask()));
 	connect(ui.action_Remove_mask, SIGNAL(triggered()), this, SLOT(RemoveMask()));
+	connect(ui.actionLoad_directory, SIGNAL(triggered()), this, SLOT(LoadDirectory()));
+
 	connect(ui.actionV_Disparity, SIGNAL(triggered()), this, SLOT(VDisparityCall()));
 	connect(ui.actionU_Disparity, SIGNAL(triggered()), this, SLOT(UDisparityCall()));
 	connect(ui.actionHoughLineV_Disp, SIGNAL(triggered()), this, SLOT(HoughLinesDetectionCall()));
@@ -122,7 +138,7 @@ void App::LoadMask()
 			break;
 		}
 	}
-}	
+}
 
 void App::RemoveMask()
 {
@@ -144,7 +160,7 @@ void App::VDisparityCall()
 
 		std::chrono::duration<double> elapsed_seconds;
 
-		if (mask == NULL) 
+		if (mask == NULL)
 		{
 			VDisparity(*disparity, *v_disparity, elapsed_seconds);
 			VDisparityNormalized(*disparity, *v_disparityNormalized);
@@ -241,7 +257,7 @@ void App::CudaProbabilisticHoughLinesDetectionCall()
 		std::chrono::duration<double> elapsed_seconds;
 		cv::Vec4i line;
 
-		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds);
+		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds, houghThreshSlider->value());
 
 		PrintElapsedTime(elapsed_seconds, "Cuda Probabilistic Hough Lines");
 
@@ -249,7 +265,7 @@ void App::CudaProbabilisticHoughLinesDetectionCall()
 		label_2x2->adjustSize();
 
 		VDisparityLineToGroundPlane(line);
-	}	
+	}
 }
 
 void App::PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, const char* method)
@@ -317,4 +333,52 @@ void App::VDisparityLineToGroundPlane(const cv::Vec4i line)
 App::~App()
 {
 	//
+}
+
+
+void App::setHoughThreshSliderValue(int newValue)
+{
+	if (v_disparity != NULL)
+	{
+		QImage img(*v_disparityNormalized);
+		std::chrono::duration<double> elapsed_seconds;
+		cv::Vec4i line;
+
+		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds, houghThreshSlider->value());
+
+		PrintElapsedTime(elapsed_seconds, "Cuda Probabilistic Hough Lines");
+
+		label_2x2->setPixmap(QPixmap::fromImage(img));
+		label_2x2->adjustSize();
+
+		VDisparityLineToGroundPlane(line);
+	}
+}
+
+
+
+//load dir
+void App::LoadDirectory()
+{
+	//QString dir = "TransferFunctions";
+	QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "", QFileDialog::DontResolveSymlinks);
+
+	if (!dir.isNull()) 
+	{
+		QDirIterator it(dir, QDirIterator::Subdirectories);
+		while (it.hasNext()) {
+			it.next();
+			if (it.fileInfo().isFile())
+			{
+
+				std::cout << it.filePath().toStdString() << "\n";
+				//fileList.push_back(it.filePath());
+				QImage currImg;
+				currImg.load(it.filePath());
+
+				std::cout << currImg.size().width() << ", " << currImg.size().height() << '\n';
+			}
+		}
+	}
+
 }

@@ -34,6 +34,7 @@ public:
     QAction *action_Load_source;
     QAction *action_Remove_mask;
     QAction *action_Load_disparity;
+    QAction *actionLoad_directory;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menu_File;
@@ -64,6 +65,8 @@ public:
         action_Remove_mask->setObjectName(QStringLiteral("action_Remove_mask"));
         action_Load_disparity = new QAction(AppClass);
         action_Load_disparity->setObjectName(QStringLiteral("action_Load_disparity"));
+        actionLoad_directory = new QAction(AppClass);
+        actionLoad_directory->setObjectName(QStringLiteral("actionLoad_directory"));
         centralWidget = new QWidget(AppClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         AppClass->setCentralWidget(centralWidget);
@@ -82,6 +85,7 @@ public:
         menu_File->addAction(action_Load_mask);
         menu_File->addAction(action_Load_source);
         menu_File->addAction(action_Remove_mask);
+        menu_File->addAction(actionLoad_directory);
         menuRun->addAction(actionV_Disparity);
         menuRun->addAction(actionU_Disparity);
         menuRun->addAction(actionHoughLineV_Disp);
@@ -107,6 +111,7 @@ public:
         action_Load_source->setText(QApplication::translate("AppClass", "&Load source", 0));
         action_Remove_mask->setText(QApplication::translate("AppClass", "&Remove mask", 0));
         action_Load_disparity->setText(QApplication::translate("AppClass", "&Load disparity", 0));
+        actionLoad_directory->setText(QApplication::translate("AppClass", "Load directory", 0));
         menu_File->setTitle(QApplication::translate("AppClass", "&File", 0));
         menuRun->setTitle(QApplication::translate("AppClass", "Run", 0));
     } // retranslateUi

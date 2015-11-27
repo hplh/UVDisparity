@@ -18,4 +18,8 @@ void ProbabilisticHoughLinesDetection(const QImage &source, QImage &result, cv::
 
 void CudaHoughLinesDetection(const QImage &source, QImage &result, std::chrono::duration<double> &elapsed_seconds);
 
-void CudaProbabilisticHoughLinesDetection(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds);
+void CudaProbabilisticHoughLinesDetection(const QImage &source, QImage &result, cv::Vec4i &selectedLine, std::chrono::duration<double> &elapsed_seconds, unsigned short int thresholdHoughThickness);
+
+unsigned int lineCost(const QImage &source, cv::Vec4i &line, unsigned short int thresholdHoughThickness);
+
+void getBestLine(const QImage &source, std::vector<cv::Vec4i> lines, cv::Vec4i &bestLine, unsigned short int thresholdHoughThickness);
