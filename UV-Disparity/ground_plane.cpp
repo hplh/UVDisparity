@@ -134,6 +134,13 @@ void GroundPlane(const QImage &source, std::vector<cv::Vec2i> &points, std::vect
 	b = cvmGet(res, 1, 0);
 	c = cvmGet(res, 2, 0);
 
+	// log detected plane ecuation
+	std::fstream fs;
+	fs.open("groundPlane.txt", std::fstream::app);
+	fs << "a= " << a << " b= " << b << " c= " << c << std::endl;
+	fs.flush();
+	fs.close();
+
 	// find all 3D points that lie on the plane within a threshold distance
 	for (int row = 0; row < height; ++row)
 	{
