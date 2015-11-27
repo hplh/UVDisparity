@@ -197,7 +197,7 @@ void CudaProbabilisticHoughLinesDetection(const QImage &source, QImage &result, 
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();
 
-	cv::Ptr<cv::cuda::HoughSegmentDetector> hough = cv::cuda::createHoughSegmentDetector(1.0f, (float)(CV_PI / 180.0f), 150, 0);
+	cv::Ptr<cv::cuda::HoughSegmentDetector> hough = cv::cuda::createHoughSegmentDetector(1.0f, (float)(CV_PI / 180.0f), 100, 0);
 	hough->detect(d_src, d_lines);
 
 	end = std::chrono::system_clock::now();

@@ -31,7 +31,7 @@
     <addaction name="action_Load_mask"/>
     <addaction name="action_Load_source"/>
     <addaction name="action_Remove_mask"/>
-    <addaction name="actionLoad_directory"/>
+    <addaction name="action_Process_Dirs"/>
    </widget>
    <widget class="QMenu" name="menuRun">
     <property name="title">
@@ -97,9 +97,9 @@
     <string>&amp;Load disparity</string>
    </property>
   </action>
-  <action name="actionLoad_directory">
+  <action name="action_Process_Dirs">
    <property name="text">
-    <string>Load directory</string>
+    <string>&amp;Process Dirs</string>
    </property>
   </action>
  </widget>

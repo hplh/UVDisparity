@@ -191,3 +191,5 @@ docs/V-disparity Based UGV Obstacle Detection in Rough Outdoor.pdf
 UV-Disparity/UV-Disparity.vcxproj.filters
 *.vcxproj
 UV-Disparity/GeneratedFiles/qrc_app.cpp
+*.png
+*.pgm

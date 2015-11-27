@@ -32,7 +32,7 @@ private slots:
 	void LoadSource();
 	void LoadMask();
 	void RemoveMask();
-	void LoadDirectory();
+	void processDirectories();
 
 	void VDisparityCall();
 	void UDisparityCall();
@@ -81,7 +81,7 @@ private:
 	QSlider *houghThreshSlider;
 
 	void PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, const char* method);
-	void VDisparityLineToGroundPlane(const cv::Vec4i line);
+	void VDisparityLineToGroundPlane(const cv::Vec4i line, bool displayResults = true);
 };
 
 #endif // App_H

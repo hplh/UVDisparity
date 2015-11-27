@@ -1,6 +1,8 @@
 #include "app.h"
 
 #include <iostream>
+#include <fstream>
+
 #include <QDirIterator>
 
 
@@ -67,7 +69,7 @@ App::App(QWidget *parent)
 	houghThreshSlider = new QSlider(Qt::Vertical);
 	houghThreshSlider->setRange(0, 20);
 	houghThreshSlider->setTickPosition(QSlider::TicksRight);
-	houghThreshSlider->setValue(0);
+	houghThreshSlider->setValue(2);
 	//houghThreshSlider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
 
 	connect(houghThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(setHoughThreshSliderValue(int)));
@@ -85,7 +87,7 @@ App::App(QWidget *parent)
 	connect(ui.action_Load_source, SIGNAL(triggered()), this, SLOT(LoadSource()));
 	connect(ui.action_Load_mask, SIGNAL(triggered()), this, SLOT(LoadMask()));
 	connect(ui.action_Remove_mask, SIGNAL(triggered()), this, SLOT(RemoveMask()));
-	connect(ui.actionLoad_directory, SIGNAL(triggered()), this, SLOT(LoadDirectory()));
+	connect(ui.action_Process_Dirs, SIGNAL(triggered()), this, SLOT(processDirectories()));
 
 	connect(ui.actionV_Disparity, SIGNAL(triggered()), this, SLOT(VDisparityCall()));
 	connect(ui.actionU_Disparity, SIGNAL(triggered()), this, SLOT(UDisparityCall()));
@@ -275,7 +277,7 @@ void App::PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, 
 	elapsedTimeLabel->setText(QString(txt).append(" s"));
 }
 
-void App::VDisparityLineToGroundPlane(const cv::Vec4i line)
+void App::VDisparityLineToGroundPlane(const cv::Vec4i line, bool displayResults)
 {
 	// find all points that lie on the detected line within a threshold distance
 	std::vector<cv::Vec2i> points;
@@ -307,8 +309,11 @@ void App::VDisparityLineToGroundPlane(const cv::Vec4i line)
 		groundPlane->setPixel(col, row, disparity->pixel(col, row));
 	}
 
-	label_2x0->setPixmap(QPixmap::fromImage(*groundPlane));
-	label_2x0->adjustSize();
+	if (displayResults)
+	{
+		label_2x0->setPixmap(QPixmap::fromImage(*groundPlane));
+		label_2x0->adjustSize();
+	}
 
 	// paint detected ground plane on result image
 	if (source != NULL)
@@ -325,8 +330,12 @@ void App::VDisparityLineToGroundPlane(const cv::Vec4i line)
 		}
 
 		painter.end();
-		label_3x0->setPixmap(QPixmap::fromImage(*result));
-		label_3x0->adjustSize();
+
+		if (displayResults)
+		{
+			label_3x0->setPixmap(QPixmap::fromImage(*result));
+			label_3x0->adjustSize();
+		}
 	}
 }
 
@@ -358,27 +367,88 @@ void App::setHoughThreshSliderValue(int newValue)
 
 
 //load dir
-void App::LoadDirectory()
+void App::processDirectories()
 {
-	//QString dir = "TransferFunctions";
-	QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "", QFileDialog::DontResolveSymlinks);
+	QString dirImageRaw = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//";
+	QString dirImageDisp = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//ELAS disp//";
+	QString resultImageDisp = "E://UVDisparity//Results//";
 
-	if (!dir.isNull()) 
-	{
-		QDirIterator it(dir, QDirIterator::Subdirectories);
-		while (it.hasNext()) {
-			it.next();
-			if (it.fileInfo().isFile())
-			{
 
-				std::cout << it.filePath().toStdString() << "\n";
-				//fileList.push_back(it.filePath());
-				QImage currImg;
-				currImg.load(it.filePath());
+	//outFile.open("E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//processingTimes.txt");
 
-				std::cout << currImg.size().width() << ", " << currImg.size().height() << '\n';
-			}
-		}
+	//process("E://Stereo Datasets//Results UTI new//POL dataset//Images//left_458.pgm", "E://Stereo Datasets//Results UTI new//POL dataset//Images//right_458.pgm");
+	std::string dirResults = "E://UVDisparity//Results";
+
+	uint16_t num_of_frames = 2000;
+
+	
+	std::chrono::duration<double> elapsed_seconds;
+
+	for (int32_t i = 0; i < num_of_frames; i++) {
+
+		// input file names
+		char sourceBasename[256];
+		sprintf(sourceBasename, "%d.pgm", i);
+
+		char dispBasename[256];
+		sprintf(dispBasename, "%d_disp.pgm", i);
+
+		std::string sourceFilename = dirImageRaw.toStdString() + "/left_" + sourceBasename;
+		std::string dispFilename = dirImageDisp.toStdString() + "/left_" + dispBasename;
+
+		source = new QImage();
+		disparity = new QImage();
+
+		source->load(sourceFilename.c_str());
+		disparity->load(dispFilename.c_str());
+
+		v_disparity = new QImage(256, disparity->height(), QImage::Format_RGB888);
+		v_disparityNormalized = new QImage(256, disparity->height(), QImage::Format_RGB888);
+
+		//VDisparityCall();
+		v_disparity->fill(0);
+		//v_disparityNormalized->fill(0);
+		VDisparity(*disparity, *v_disparity, elapsed_seconds);
+
+		//CudaProbabilisticHoughLinesDetectionCall();
+		QImage img(*v_disparityNormalized);
+		cv::Vec4i line;
+		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds, houghThreshSlider->value());
+		//PrintElapsedTime(elapsed_seconds, "Cuda Probabilistic Hough Lines");
+		VDisparityLineToGroundPlane(line, false);
+
+		char resultBasename[256];
+		sprintf(resultBasename, "%d.png", i);
+
+		std::string resultFilename = resultImageDisp.toStdString() + "/result_" + resultBasename;
+		result->save(resultFilename.c_str());
+
+		delete v_disparity;
+		delete v_disparityNormalized;
+
 	}
+
+	//outFile.close();
+
+	//QString dir = "TransferFunctions";
+	//QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "", QFileDialog::DontResolveSymlinks);
+
+	//if (!dir.isNull()) 
+	//{
+	//	QDirIterator it(dir, QDirIterator::Subdirectories);
+	//	while (it.hasNext()) {
+	//		it.next();
+	//		if (it.fileInfo().isFile())
+	//		{
+
+	//			std::cout << it.filePath().toStdString() << "\n";
+	//			//fileList.push_back(it.filePath());
+	//			QImage currImg;
+	//			currImg.load(it.filePath());
+
+	//			std::cout << currImg.size().width() << ", " << currImg.size().height() << '\n';
+	//		}
+	//	}
+	//}
 
 }
