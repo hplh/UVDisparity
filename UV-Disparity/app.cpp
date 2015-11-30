@@ -1,387 +1,94 @@
 #include "app.h"
 
-#include <iostream>
-#include <fstream>
-
-#include <QDirIterator>
-
-
 App::App(QWidget *parent)
-	: QMainWindow(parent)
+	: QWidget(parent)
 {
 	ui.setupUi(this);
-
-	centralWidget = new QWidget(this);
-	centralLayout = new QVBoxLayout(this);
-
-	contentWidget = new QWidget(this);
-	contentLayout = new QGridLayout(this);
-
-	elapsedTimeLabel = new QLabel("Elapsed time: 0 s");
-	elapsedTimeLabel->setFixedSize(300, 15);
-
-	label_0x0 = new QLabel;
-	label_0x0->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_0x0->setScaledContents(true);
-	contentLayout->addWidget(label_0x0, 0, 0);
-
-	label_0x1 = new QLabel;
-	label_0x1->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_0x1->setScaledContents(true);
-	contentLayout->addWidget(label_0x1, 0, 1);
-
-	label_0x2 = new QLabel;
-	label_0x2->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_0x2->setScaledContents(true);
-	contentLayout->addWidget(label_0x2, 0, 2);
-
-	label_1x0 = new QLabel;
-	label_1x0->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_1x0->setScaledContents(true);
-	contentLayout->addWidget(label_1x0, 1, 0);
-
-	label_2x0 = new QLabel;
-	label_2x0->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_2x0->setScaledContents(true);
-	contentLayout->addWidget(label_2x0, 2, 0);
-
-	label_2x1 = new QLabel;
-	label_2x1->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_2x1->setScaledContents(true);
-	contentLayout->addWidget(label_2x1, 2, 1);
-
-	label_2x2 = new QLabel;
-	label_2x2->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_2x2->setScaledContents(true);
-	contentLayout->addWidget(label_2x2, 2, 2);
-
-	label_3x0 = new QLabel;
-	label_3x0->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_3x0->setScaledContents(true);
-	contentLayout->addWidget(label_3x0, 3, 0);
-
-	label_3x1 = new QLabel;
-	label_3x1->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	label_3x1->setScaledContents(true);
-	contentLayout->addWidget(label_3x1, 3, 1);
-
-
-	houghThreshSlider = new QSlider(Qt::Vertical);
-	houghThreshSlider->setRange(0, 20);
-	houghThreshSlider->setTickPosition(QSlider::TicksRight);
-	houghThreshSlider->setValue(2);
-	//houghThreshSlider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
-
-	connect(houghThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(setHoughThreshSliderValue(int)));
-	contentLayout->addWidget(houghThreshSlider, 2, 3);
-
-	contentWidget->setLayout(contentLayout);
-
-	centralLayout->addWidget(elapsedTimeLabel);
-	centralLayout->addWidget(contentWidget);
-	centralWidget->setLayout(centralLayout);
-
-	setCentralWidget(centralWidget);
-
-	connect(ui.action_Load_disparity, SIGNAL(triggered()), this, SLOT(LoadDisparity()));
-	connect(ui.action_Load_source, SIGNAL(triggered()), this, SLOT(LoadSource()));
-	connect(ui.action_Load_mask, SIGNAL(triggered()), this, SLOT(LoadMask()));
-	connect(ui.action_Remove_mask, SIGNAL(triggered()), this, SLOT(RemoveMask()));
-	connect(ui.action_Process_Dirs, SIGNAL(triggered()), this, SLOT(processDirectories()));
-
-	connect(ui.actionV_Disparity, SIGNAL(triggered()), this, SLOT(VDisparityCall()));
-	connect(ui.actionU_Disparity, SIGNAL(triggered()), this, SLOT(UDisparityCall()));
-	connect(ui.actionHoughLineV_Disp, SIGNAL(triggered()), this, SLOT(HoughLinesDetectionCall()));
-	connect(ui.actionPHoughLineV_Disp, SIGNAL(triggered()), this, SLOT(ProbabilisticHoughLinesDetectionCall()));
-	connect(ui.actionCudaHoughLineV_Disp, SIGNAL(triggered()), this, SLOT(CudaHoughLinesDetectionCall()));
-	connect(ui.actionCudaPHoughLineV_Disp, SIGNAL(triggered()), this, SLOT(CudaProbabilisticHoughLinesDetectionCall()));
+	CreateMenus();
+	InitializeComponents();
 }
 
-void App::LoadDisparity()
+// slots
+void App::SetHoughLineThicknessThreshSliderValue(int)
 {
-	QFileDialog fileDialog(this, tr("Load disparity"), QDir::currentPath());
-	while (fileDialog.exec() == QDialog::Accepted)
+	if (!groundPlane.getDetectedPlane().isNull())
 	{
-		disparity = new QImage(fileDialog.selectedFiles().first());
-		if (!disparity->isNull())
-		{
-			label_0x0->setPixmap(QPixmap::fromImage(*disparity));
-			label_0x0->adjustSize();
-			break;
-		}
+		groundPlane.Detect(image, lastUsedHoughMethod, houghLineThicknessThreshSlider->value());
 	}
+
+	UpdateLabels();
 }
 
-void App::LoadSource()
+void App::SetUVDisparityThreshSliderValue(int value)
 {
+	image.setUVDisparityThreshold(value);
+	image.VDisparity();
+	image.UDisparity();
+
+	if (!groundPlane.getDetectedPlane().isNull())
+	{
+		groundPlane.Detect(image, lastUsedHoughMethod, houghLineThicknessThreshSlider->value());
+	}
+
+	UpdateLabels();
+}
+
+void App::Load()
+{
+	QString sourceFile;
+	QString disparityFile;
+	QString maskFile;
+	
 	QFileDialog fileDialog(this, tr("Load source"), QDir::currentPath());
 	while (fileDialog.exec() == QDialog::Accepted)
 	{
-		source = new QImage(fileDialog.selectedFiles().first());
-		if (!source->isNull())
-		{
-			label_3x1->setPixmap(QPixmap::fromImage(*source));
-			label_3x1->adjustSize();
-			break;
-		}
+		sourceFile = fileDialog.selectedFiles().first();
+		break;
 	}
-}
 
-void App::LoadMask()
-{
-	QFileDialog fileDialog(this, tr("Load mask"), QDir::currentPath());
-	while (fileDialog.exec() == QDialog::Accepted)
+	if (!sourceFile.isNull() && sourceFile.endsWith(".pgm"))
 	{
-		mask = new QImage(fileDialog.selectedFiles().first());
-		if (!mask->isNull())
-		{
-			label_0x1->setPixmap(QPixmap::fromImage(*mask));
-			label_0x1->adjustSize();
-			break;
-		}
+		QString base = sourceFile.remove(".pgm");
+		disparityFile = base.append("_disp.pgm");
+		maskFile = base.append("_mask.pgm");
+
+		image.Load(sourceFile, disparityFile, maskFile);
+
+		image.VDisparity();
+		image.UDisparity();
+
+		UpdateLabels();
 	}
 }
 
-void App::RemoveMask()
+void App::Save()
 {
-	delete mask;
-	mask = NULL;
-	label_0x1->clear();
-	label_0x1->adjustSize();
+	QImage groundPlaneOnSource = groundPlane.getDrownOnSource();
+
+	QImage result(groundPlaneOnSource.width() + 256, groundPlaneOnSource.height() + 256, QImage::Format_RGB888);
+	QPainter painter(&result);
+	painter.drawImage(0, 0, groundPlaneOnSource);
+	painter.drawImage(0, groundPlaneOnSource.height(), image.getUDisparityLog());
+	painter.drawImage(groundPlaneOnSource.width(), 0, image.getVDisparityLog());
+	painter.end();
+
+	QString filename = QFileDialog::getSaveFileName(this, tr("Save"), QDir::currentPath(), tr("Documents (*.doc)"));
+
+	result.save(filename);
 }
 
-void App::VDisparityCall()
+void App::ProcessDirectories()
 {
-	if (disparity != NULL)
-	{
-		v_disparity = new QImage(256, disparity->height(), QImage::Format_RGB888);
-		v_disparity->fill(0);
-
-		v_disparityNormalized = new QImage(256, disparity->height(), QImage::Format_RGB888);
-		v_disparityNormalized->fill(0);
-
-		std::chrono::duration<double> elapsed_seconds;
-
-		if (mask == NULL)
-		{
-			VDisparity(*disparity, *v_disparity, elapsed_seconds);
-			VDisparityNormalized(*disparity, *v_disparityNormalized);
-		}
-		else
-		{
-			VDisparity(*disparity, *mask, *v_disparity, elapsed_seconds);
-			VDisparityNormalized(*disparity, *mask, *v_disparityNormalized);
-		}
-
-		PrintElapsedTime(elapsed_seconds, "V-Disparity");
-
-		label_0x2->setPixmap(QPixmap::fromImage(*v_disparity));
-		label_0x2->adjustSize();
-
-		label_2x2->setPixmap(QPixmap::fromImage(*v_disparityNormalized));
-		label_2x2->adjustSize();
-	}
-}
-
-void App::UDisparityCall()
-{
-	if (disparity != NULL)
-	{
-		u_disparity = new QImage(disparity->width(), 256, QImage::Format_RGB888);
-		u_disparity->fill(0);
-		std::chrono::duration<double> elapsed_seconds;
-
-		UDisparity(*disparity, *u_disparity, elapsed_seconds);
-
-		PrintElapsedTime(elapsed_seconds, "U-Disparity");
-
-		label_1x0->setPixmap(QPixmap::fromImage(*u_disparity));
-		label_1x0->adjustSize();
-	}
-}
-
-void App::HoughLinesDetectionCall()
-{
-	if (v_disparity != NULL)
-	{
-		QImage img(*v_disparityNormalized);
-		std::chrono::duration<double> elapsed_seconds;
-
-		HoughLinesDetection(*v_disparity, img, elapsed_seconds);
-
-		PrintElapsedTime(elapsed_seconds, "Hough Lines");
-
-		label_2x2->setPixmap(QPixmap::fromImage(img));
-		label_2x2->adjustSize();
-	}
-}
-
-void App::ProbabilisticHoughLinesDetectionCall()
-{
-	if (v_disparity != NULL)
-	{
-		QImage img(*v_disparityNormalized);
-		std::chrono::duration<double> elapsed_seconds;
-		cv::Vec4i line;
-
-		ProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds);
-
-		PrintElapsedTime(elapsed_seconds, "Probabilistic Hough Lines");
-
-		label_2x2->setPixmap(QPixmap::fromImage(img));
-		label_2x2->adjustSize();
-
-		VDisparityLineToGroundPlane(line);
-	}
-}
-
-void App::CudaHoughLinesDetectionCall()
-{
-	if (v_disparity != NULL)
-	{
-		QImage img(*v_disparityNormalized);
-		std::chrono::duration<double> elapsed_seconds;
-
-		CudaHoughLinesDetection(*v_disparity, img, elapsed_seconds);
-
-		PrintElapsedTime(elapsed_seconds, "Cuda Hough Lines");
-
-		label_2x2->setPixmap(QPixmap::fromImage(img));
-		label_2x2->adjustSize();
-	}
-}
-
-void App::CudaProbabilisticHoughLinesDetectionCall()
-{
-	if (v_disparity != NULL)
-	{
-		QImage img(*v_disparityNormalized);
-		std::chrono::duration<double> elapsed_seconds;
-		cv::Vec4i line;
-
-		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds, houghThreshSlider->value());
-
-		PrintElapsedTime(elapsed_seconds, "Cuda Probabilistic Hough Lines");
-
-		label_2x2->setPixmap(QPixmap::fromImage(img));
-		label_2x2->adjustSize();
-
-		VDisparityLineToGroundPlane(line);
-	}
-}
-
-void App::PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, const char* method)
-{
-	char txt[128];
-	sprintf(txt, "%s: %f", method, elapsed_seconds.count());
-	elapsedTimeLabel->setText(QString(txt).append(" s"));
-}
-
-void App::VDisparityLineToGroundPlane(const cv::Vec4i line, bool displayResults)
-{
-	// find all points that lie on the detected line within a threshold distance
-	std::vector<cv::Vec2i> points;
-	PointsOnLine(*disparity, line, points);
-
-	pointsOnLine = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
-	pointsOnLine->fill(0);
-	for (std::vector<cv::Vec2i>::iterator it = points.begin(); it != points.end(); ++it)
-	{
-		int col = (*it)[0];
-		int row = (*it)[1];
-		pointsOnLine->setPixel(col, row, disparity->pixel(col, row));
-	}
-
-	label_2x1->setPixmap(QPixmap::fromImage(*pointsOnLine));
-	label_2x1->adjustSize();
-
-	// find ground plane 
-	std::vector<cv::Vec2i> groundPlanePoints;
-	GroundPlane(*disparity, points, groundPlanePoints);
-
-	groundPlane = new QImage(disparity->width(), disparity->height(), QImage::Format_RGB888);
-	groundPlane->fill(0);
-
-	for (std::vector<cv::Vec2i>::iterator it = groundPlanePoints.begin(); it != groundPlanePoints.end(); ++it)
-	{
-		int col = (*it)[0];
-		int row = (*it)[1];
-		groundPlane->setPixel(col, row, disparity->pixel(col, row));
-	}
-
-	if (displayResults)
-	{
-		label_2x0->setPixmap(QPixmap::fromImage(*groundPlane));
-		label_2x0->adjustSize();
-	}
-
-	// paint detected ground plane on result image
-	if (source != NULL)
-	{
-		result = new QImage(source->convertToFormat(QImage::Format_ARGB32_Premultiplied));
-		QPainter painter(result);
-		painter.setPen(QColor(255, 0, 0, 128));
-
-		for (std::vector<cv::Vec2i>::iterator it = groundPlanePoints.begin(); it != groundPlanePoints.end(); ++it)
-		{
-			int col = (*it)[0];
-			int row = (*it)[1];
-			painter.drawPoint(col, row);
-		}
-
-		painter.end();
-
-		if (displayResults)
-		{
-			label_3x0->setPixmap(QPixmap::fromImage(*result));
-			label_3x0->adjustSize();
-		}
-	}
-}
-
-App::~App()
-{
-	//
-}
-
-
-void App::setHoughThreshSliderValue(int newValue)
-{
-	if (v_disparity != NULL)
-	{
-		QImage img(*v_disparityNormalized);
-		std::chrono::duration<double> elapsed_seconds;
-		cv::Vec4i line;
-
-		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds, houghThreshSlider->value());
-
-		PrintElapsedTime(elapsed_seconds, "Cuda Probabilistic Hough Lines");
-
-		label_2x2->setPixmap(QPixmap::fromImage(img));
-		label_2x2->adjustSize();
-
-		VDisparityLineToGroundPlane(line);
-	}
-}
-
-
-
-//load dir
-void App::processDirectories()
-{
-	QString dirImageRaw = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//";
-	QString dirImageDisp = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//ELAS disp//";
-	QString resultImageDisp = "E://UVDisparity//Results//";
-
-
-	//outFile.open("E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//processingTimes.txt");
-
-	//process("E://Stereo Datasets//Results UTI new//POL dataset//Images//left_458.pgm", "E://Stereo Datasets//Results UTI new//POL dataset//Images//right_458.pgm");
-	std::string dirResults = "E://UVDisparity//Results";
+	//QString dirImageRaw = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//";
+	//QString dirImageDisp = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//ELAS disp//";
+	//QString resultImageDisp = "E://UVDisparity//Results//";
+	
+	QString dirImageRaw = "D://sov//images//raw//";
+	QString dirImageDisp = "D://sov//images//disp//";
+	QString resultImageDisp = "D://sov//images//results//";
 
 	uint16_t num_of_frames = 2000;
 
-	
 	std::chrono::duration<double> elapsed_seconds;
 
 	for (int32_t i = 0; i < num_of_frames; i++) {
@@ -396,59 +103,217 @@ void App::processDirectories()
 		std::string sourceFilename = dirImageRaw.toStdString() + "/left_" + sourceBasename;
 		std::string dispFilename = dirImageDisp.toStdString() + "/left_" + dispBasename;
 
-		source = new QImage();
-		disparity = new QImage();
+		if (!QFile(QString(dispFilename.c_str())).exists() || !QFile(QString(sourceFilename.c_str())).exists())
+		{
+			continue;
+		}
 
-		source->load(sourceFilename.c_str());
-		disparity->load(dispFilename.c_str());
+		image.Load(QString(sourceFilename.c_str()), QString(dispFilename.c_str()), "");
+		image.VDisparity();
+		image.UDisparity();
+		groundPlane.Detect(image, cudaProbabilisticHoughLines, houghLineThicknessThreshSlider->value());
 
-		v_disparity = new QImage(256, disparity->height(), QImage::Format_RGB888);
-		v_disparityNormalized = new QImage(256, disparity->height(), QImage::Format_RGB888);
+		QImage groundPlaneOnSource = groundPlane.getDrownOnSource();
 
-		//VDisparityCall();
-		v_disparity->fill(0);
-		//v_disparityNormalized->fill(0);
-		VDisparity(*disparity, *v_disparity, elapsed_seconds);
-
-		//CudaProbabilisticHoughLinesDetectionCall();
-		QImage img(*v_disparityNormalized);
-		cv::Vec4i line;
-		CudaProbabilisticHoughLinesDetection(*v_disparity, img, line, elapsed_seconds, houghThreshSlider->value());
-		//PrintElapsedTime(elapsed_seconds, "Cuda Probabilistic Hough Lines");
-		VDisparityLineToGroundPlane(line, false);
+		QImage result(groundPlaneOnSource.width() + 256, groundPlaneOnSource.height() + 256, QImage::Format_RGB888);
+		QPainter painter(&result);
+		painter.drawImage(0, 0, groundPlaneOnSource);
+		painter.drawImage(0, groundPlaneOnSource.height(), image.getUDisparityLog());
+		painter.drawImage(groundPlaneOnSource.width(), 0, image.getVDisparityLog());
+		painter.end();
 
 		char resultBasename[256];
 		sprintf(resultBasename, "%d.png", i);
 
 		std::string resultFilename = resultImageDisp.toStdString() + "/result_" + resultBasename;
-		result->save(resultFilename.c_str());
+		result.save(resultFilename.c_str());
+	}
+}
 
-		delete v_disparity;
-		delete v_disparityNormalized;
+void App::HoughLinesCall()
+{
+	groundPlane.Detect(image, houghLines, houghLineThicknessThreshSlider->value());
+	lastUsedHoughMethod = houghLines;
+	UpdateLabels();
+}
 
+void App::ProbabilisticHoughLinesCall()
+{
+	groundPlane.Detect(image, probabilisticHoughLines, houghLineThicknessThreshSlider->value());
+	lastUsedHoughMethod = houghLines;
+	UpdateLabels();
+}
+
+void App::CudaHoughLinesCall()
+{
+	groundPlane.Detect(image, cudaHoughLines, houghLineThicknessThreshSlider->value());
+	lastUsedHoughMethod = cudaHoughLines;
+	UpdateLabels();
+}
+
+void App::CudaProbabilisticHoughLinesCall()
+{
+	groundPlane.Detect(image, cudaProbabilisticHoughLines, houghLineThicknessThreshSlider->value());
+	lastUsedHoughMethod = cudaProbabilisticHoughLines;
+	UpdateLabels();
+}
+
+// private methods
+void App::CreateMenus()
+{
+	menuBar = new QMenuBar(this);
+	menuBar->setGeometry(QRect(0, 0, 600, 21));
+	
+	// file menu
+	fileMenu = new QMenu("File", menuBar);
+	menuBar->addMenu(fileMenu);
+
+	load = new QAction(fileMenu);
+	load->setText("Load");
+	connect(load, SIGNAL(triggered()), this, SLOT(Load()));
+
+	save = new QAction(fileMenu);
+	save->setText("Save");
+	connect(save, SIGNAL(triggered()), this, SLOT(Save()));
+
+	processDirectories = new QAction(fileMenu);
+	processDirectories->setText("Process Directories");
+	connect(processDirectories, SIGNAL(triggered()), this, SLOT(ProcessDirectories()));
+	
+	fileMenu->addAction(load);	
+	fileMenu->addAction(save);
+	fileMenu->addAction(processDirectories);
+
+	// run menu
+	runMenu = new QMenu("Run", menuBar);
+	menuBar->addMenu(runMenu);
+
+	houghLine = new QAction(runMenu);
+	houghLine->setText("HoughLines");
+	connect(houghLine, SIGNAL(triggered()), this, SLOT(HoughLinesCall()));
+
+	probabilisticHoughLine = new QAction(runMenu);
+	probabilisticHoughLine->setText("PHoughLines");
+	connect(probabilisticHoughLine, SIGNAL(triggered()), this, SLOT(ProbabilisticHoughLinesCall()));
+
+	cudaHoughLine = new QAction(runMenu);
+	cudaHoughLine->setText("CudaHoughLines");
+	connect(cudaHoughLine, SIGNAL(triggered()), this, SLOT(CudaHoughLinesCall()));
+
+	cudaProbabilisticHoughLine = new QAction(runMenu);
+	cudaProbabilisticHoughLine->setText("CudaPHoughLines");
+	connect(cudaProbabilisticHoughLine, SIGNAL(triggered()), this, SLOT(CudaProbabilisticHoughLinesCall()));
+
+	runMenu->addAction(houghLine);
+	runMenu->addAction(probabilisticHoughLine);
+	runMenu->addAction(cudaHoughLine);
+	runMenu->addAction(cudaProbabilisticHoughLine);
+}
+
+void App::InitializeComponents()
+{
+	contentLayout = new QGridLayout(this);
+
+	// Labels
+	for (int i = 0; i < labelMatRows; ++i)
+	{
+		for (int j = 0; j < labelMatCols; ++j)
+		{
+			labelMat[i][j] = new QLabel;
+			labelMat[i][j]->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+			labelMat[i][j]->setScaledContents(true);
+			contentLayout->addWidget(labelMat[i][j], i, j);
+		}
 	}
 
-	//outFile.close();
+	// hough line thickness threshold slider
+	houghLineThicknessThreshSlider = new QSlider(Qt::Vertical);
+	houghLineThicknessThreshSlider->setRange(0, 20);
+	houghLineThicknessThreshSlider->setTickPosition(QSlider::TicksRight);
+	connect(houghLineThicknessThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(SetHoughLineThicknessThreshSliderValue(int)));
+	contentLayout->addWidget(houghLineThicknessThreshSlider, 2, 3);
 
-	//QString dir = "TransferFunctions";
-	//QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "", QFileDialog::DontResolveSymlinks);
+	// uv-disparity threshold slider
+	uvDisparityThreshSlider = new QSlider(Qt::Vertical);
+	uvDisparityThreshSlider->setRange(0, 20);
+	uvDisparityThreshSlider->setTickPosition(QSlider::TicksRight);
+	connect(uvDisparityThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(SetUVDisparityThreshSliderValue(int)));
+	contentLayout->addWidget(uvDisparityThreshSlider, 0, 3);
+}
 
-	//if (!dir.isNull()) 
-	//{
-	//	QDirIterator it(dir, QDirIterator::Subdirectories);
-	//	while (it.hasNext()) {
-	//		it.next();
-	//		if (it.fileInfo().isFile())
-	//		{
+void App::UpdateLabels() {
+	QImage disparity = image.getDisparity();
+	if (!disparity.isNull())
+	{
+		labelMat[0][0]->setPixmap(QPixmap::fromImage(disparity));
+		labelMat[0][0]->adjustSize();
+	}
 
-	//			std::cout << it.filePath().toStdString() << "\n";
-	//			//fileList.push_back(it.filePath());
-	//			QImage currImg;
-	//			currImg.load(it.filePath());
+	QImage source = image.getSource();
+	if (!source.isNull())
+	{
+		labelMat[3][1]->setPixmap(QPixmap::fromImage(source));
+		labelMat[3][1]->adjustSize();
+	}
 
-	//			std::cout << currImg.size().width() << ", " << currImg.size().height() << '\n';
-	//		}
-	//	}
-	//}
+	QImage mask = image.getMask();
+	if (!mask.isNull())
+	{
+		labelMat[0][1]->setPixmap(QPixmap::fromImage(mask));
+		labelMat[0][1]->adjustSize();
+	}
+
+	QImage vDisparity = image.getVDisparity();
+	if (!vDisparity.isNull())
+	{
+		labelMat[0][2]->setPixmap(QPixmap::fromImage(vDisparity));
+		labelMat[0][2]->adjustSize();
+	}
+	
+	QImage vDisparityLog = image.getVDisparityLog();
+	if (!vDisparityLog.isNull())
+	{
+		labelMat[2][2]->setPixmap(QPixmap::fromImage(vDisparityLog));
+		labelMat[2][2]->adjustSize();
+	}
+	
+	QImage uDisparity = image.getUDisparity();
+	if (!uDisparity.isNull())
+	{
+		labelMat[1][1]->setPixmap(QPixmap::fromImage(uDisparity));
+		labelMat[1][1]->adjustSize();
+	}
+	
+	QImage uDisparityLog = image.getUDisparityLog();
+	if (!uDisparityLog.isNull())
+	{
+		labelMat[1][0]->setPixmap(QPixmap::fromImage(uDisparityLog));
+		labelMat[1][0]->adjustSize();
+	}
+
+	QImage imagePixelsFromHoughLine = groundPlane.getImagePixelsFromHoughLine();
+	if (!imagePixelsFromHoughLine.isNull())
+	{
+		labelMat[2][1]->setPixmap(QPixmap::fromImage(imagePixelsFromHoughLine));
+		labelMat[2][1]->adjustSize();
+	}
+
+	QImage detectedPlane = groundPlane.getDetectedPlane();
+	if (!detectedPlane.isNull())
+	{
+		labelMat[2][0]->setPixmap(QPixmap::fromImage(detectedPlane));
+		labelMat[2][0]->adjustSize();
+	}
+
+	QImage drownOnSource = groundPlane.getDrownOnSource();
+	if (!drownOnSource.isNull())
+	{
+		labelMat[3][0]->setPixmap(QPixmap::fromImage(drownOnSource));
+		labelMat[3][0]->adjustSize();
+	}
+}
+
+App::~App()
+{
 
 }

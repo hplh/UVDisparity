@@ -1,25 +1,19 @@
-#ifndef App_H
-#define App_H
+#ifndef APP_H
+#define APP_H
 
+#include <QtWidgets/QWidget>
+#include <QMenuBar>
+#include <QMenu>
 #include <QLabel>
+#include <QGridLayout>
 #include <QFileDialog>
-#include <QDir>
-#include <QHBoxLayout>
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/qPushButton>
-#include <QtWidgets/qlayout>
-#include <qcolor.h>
-#include <qpainter.h>
-
-#include <chrono>
-#include <ctime>
+#include <QDirIterator>
 
 #include "ui_app.h"
-#include "uv_disparity.h"
-#include "hough_lines.h"
-#include "ground_plane.h"
 
-class App : public QMainWindow
+#include "GroundPlane.h"
+
+class App : public QWidget
 {
 	Q_OBJECT
 
@@ -28,60 +22,49 @@ public:
 	~App();
 
 private slots:
-	void LoadDisparity();
-	void LoadSource();
-	void LoadMask();
-	void RemoveMask();
-	void processDirectories();
+	void SetHoughLineThicknessThreshSliderValue(int);
+	void SetUVDisparityThreshSliderValue(int);
+	
+	void Load();
+	void Save();
+	void ProcessDirectories();
 
-	void VDisparityCall();
-	void UDisparityCall();
-	void HoughLinesDetectionCall();
-	void ProbabilisticHoughLinesDetectionCall();
-	void CudaHoughLinesDetectionCall();
-	void CudaProbabilisticHoughLinesDetectionCall();
-
-	void setHoughThreshSliderValue(int);
+	void HoughLinesCall();
+	void ProbabilisticHoughLinesCall();
+	void CudaHoughLinesCall();
+	void CudaProbabilisticHoughLinesCall();
 
 private:
-	QImage *source = NULL;
-	QImage *disparity = NULL;
-	QImage *mask = NULL;
-
-	QImage *v_disparity = NULL;
-	QImage *v_disparityNormalized = NULL;
-
-	QImage *u_disparity = NULL;
-
-	QImage *pointsOnLine = NULL;
-	QImage *groundPlane = NULL;
-
-	QImage *result = NULL;
-
 	Ui::AppClass ui;
 
-	QWidget *centralWidget;
-	QLayout *centralLayout;
-
-	QLabel *label_0x0;
-	QLabel *label_0x1;
-	QLabel *label_0x2;
-	QLabel *label_1x0;
-	QLabel *label_2x0;
-	QLabel *label_2x1;
-	QLabel *label_2x2;
-	QLabel *label_3x0;
-	QLabel *label_3x1;
-
-	QWidget *contentWidget;
+	QMenuBar *menuBar;
+	QMenu *fileMenu;
+	QAction *load;
+	QAction *save;
+	QAction *processDirectories;
+	QMenu *runMenu;
+	QAction *houghLine;
+	QAction *probabilisticHoughLine;
+	QAction *cudaHoughLine;
+	QAction *cudaProbabilisticHoughLine;
+	
+	
 	QGridLayout *contentLayout;
+	static const unsigned int labelMatRows = 4;
+	static const unsigned int labelMatCols = 3;
+	QLabel *labelMat[labelMatRows][labelMatCols];
+	
+	QSlider *houghLineThicknessThreshSlider;
+	QSlider *uvDisparityThreshSlider;
 
-	QLabel *elapsedTimeLabel;
+	Image image;
+	GroundPlane groundPlane;
 
-	QSlider *houghThreshSlider;
+	HoughLinesMethods lastUsedHoughMethod = houghLines;
 
-	void PrintElapsedTime(const std::chrono::duration<double> elapsed_seconds, const char* method);
-	void VDisparityLineToGroundPlane(const cv::Vec4i line, bool displayResults = true);
+	void CreateMenus();
+	void InitializeComponents();
+	void UpdateLabels();
 };
 
-#endif // App_H
+#endif // APP_H

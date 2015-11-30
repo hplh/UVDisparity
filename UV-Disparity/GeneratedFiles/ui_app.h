@@ -14,9 +14,6 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
 #include <QtWidgets/QHeaderView>
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QMenu>
-#include <QtWidgets/QMenuBar>
 #include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -24,96 +21,21 @@ QT_BEGIN_NAMESPACE
 class Ui_AppClass
 {
 public:
-    QAction *actionV_Disparity;
-    QAction *actionU_Disparity;
-    QAction *actionHoughLineV_Disp;
-    QAction *actionPHoughLineV_Disp;
-    QAction *actionCudaHoughLineV_Disp;
-    QAction *actionCudaPHoughLineV_Disp;
-    QAction *action_Load_mask;
-    QAction *action_Load_source;
-    QAction *action_Remove_mask;
-    QAction *action_Load_disparity;
-    QAction *action_Process_Dirs;
-    QWidget *centralWidget;
-    QMenuBar *menuBar;
-    QMenu *menu_File;
-    QMenu *menuRun;
 
-    void setupUi(QMainWindow *AppClass)
+    void setupUi(QWidget *AppClass)
     {
         if (AppClass->objectName().isEmpty())
             AppClass->setObjectName(QStringLiteral("AppClass"));
         AppClass->resize(600, 400);
-        actionV_Disparity = new QAction(AppClass);
-        actionV_Disparity->setObjectName(QStringLiteral("actionV_Disparity"));
-        actionU_Disparity = new QAction(AppClass);
-        actionU_Disparity->setObjectName(QStringLiteral("actionU_Disparity"));
-        actionHoughLineV_Disp = new QAction(AppClass);
-        actionHoughLineV_Disp->setObjectName(QStringLiteral("actionHoughLineV_Disp"));
-        actionPHoughLineV_Disp = new QAction(AppClass);
-        actionPHoughLineV_Disp->setObjectName(QStringLiteral("actionPHoughLineV_Disp"));
-        actionCudaHoughLineV_Disp = new QAction(AppClass);
-        actionCudaHoughLineV_Disp->setObjectName(QStringLiteral("actionCudaHoughLineV_Disp"));
-        actionCudaPHoughLineV_Disp = new QAction(AppClass);
-        actionCudaPHoughLineV_Disp->setObjectName(QStringLiteral("actionCudaPHoughLineV_Disp"));
-        action_Load_mask = new QAction(AppClass);
-        action_Load_mask->setObjectName(QStringLiteral("action_Load_mask"));
-        action_Load_source = new QAction(AppClass);
-        action_Load_source->setObjectName(QStringLiteral("action_Load_source"));
-        action_Remove_mask = new QAction(AppClass);
-        action_Remove_mask->setObjectName(QStringLiteral("action_Remove_mask"));
-        action_Load_disparity = new QAction(AppClass);
-        action_Load_disparity->setObjectName(QStringLiteral("action_Load_disparity"));
-        action_Process_Dirs = new QAction(AppClass);
-        action_Process_Dirs->setObjectName(QStringLiteral("action_Process_Dirs"));
-        centralWidget = new QWidget(AppClass);
-        centralWidget->setObjectName(QStringLiteral("centralWidget"));
-        AppClass->setCentralWidget(centralWidget);
-        menuBar = new QMenuBar(AppClass);
-        menuBar->setObjectName(QStringLiteral("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 600, 21));
-        menu_File = new QMenu(menuBar);
-        menu_File->setObjectName(QStringLiteral("menu_File"));
-        menuRun = new QMenu(menuBar);
-        menuRun->setObjectName(QStringLiteral("menuRun"));
-        AppClass->setMenuBar(menuBar);
-
-        menuBar->addAction(menu_File->menuAction());
-        menuBar->addAction(menuRun->menuAction());
-        menu_File->addAction(action_Load_disparity);
-        menu_File->addAction(action_Load_mask);
-        menu_File->addAction(action_Load_source);
-        menu_File->addAction(action_Remove_mask);
-        menu_File->addAction(action_Process_Dirs);
-        menuRun->addAction(actionV_Disparity);
-        menuRun->addAction(actionU_Disparity);
-        menuRun->addAction(actionHoughLineV_Disp);
-        menuRun->addAction(actionPHoughLineV_Disp);
-        menuRun->addAction(actionCudaHoughLineV_Disp);
-        menuRun->addAction(actionCudaPHoughLineV_Disp);
 
         retranslateUi(AppClass);
 
         QMetaObject::connectSlotsByName(AppClass);
     } // setupUi
 
-    void retranslateUi(QMainWindow *AppClass)
+    void retranslateUi(QWidget *AppClass)
     {
-        AppClass->setWindowTitle(QApplication::translate("AppClass", "UV-Disparity", 0));
-        actionV_Disparity->setText(QApplication::translate("AppClass", "V-Disparity", 0));
-        actionU_Disparity->setText(QApplication::translate("AppClass", "U-Disparity", 0));
-        actionHoughLineV_Disp->setText(QApplication::translate("AppClass", "HoughLineV_Disp", 0));
-        actionPHoughLineV_Disp->setText(QApplication::translate("AppClass", "PHoughLineV_Disp", 0));
-        actionCudaHoughLineV_Disp->setText(QApplication::translate("AppClass", "CudaHoughLineV_Disp", 0));
-        actionCudaPHoughLineV_Disp->setText(QApplication::translate("AppClass", "CudaPHoughLineV_Disp", 0));
-        action_Load_mask->setText(QApplication::translate("AppClass", "&Load mask", 0));
-        action_Load_source->setText(QApplication::translate("AppClass", "&Load source", 0));
-        action_Remove_mask->setText(QApplication::translate("AppClass", "&Remove mask", 0));
-        action_Load_disparity->setText(QApplication::translate("AppClass", "&Load disparity", 0));
-        action_Process_Dirs->setText(QApplication::translate("AppClass", "&Process Dirs", 0));
-        menu_File->setTitle(QApplication::translate("AppClass", "&File", 0));
-        menuRun->setTitle(QApplication::translate("AppClass", "Run", 0));
+        AppClass->setWindowTitle(QApplication::translate("AppClass", "App", 0));
     } // retranslateUi
 
 };
