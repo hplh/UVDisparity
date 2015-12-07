@@ -13,7 +13,7 @@ void Image::Load(QString sourceFile, QString disparityFile, QString maskFile)
 
 	if (!disparity.isNull())
 	{
-		startRow = disparity.height() / 2;
+		startRow = disparity.height() * 0.66;
 	}
 }
 
@@ -234,7 +234,7 @@ void Image::HoughLinesDetection(cv::Vec4i &selectedLine, const double thresholdL
 		}
 
 		// find the best line
-		selectedLine = Utils::BestHoughLine(disparity, lines, thresholdLineThickness);
+		selectedLine = Utils::BestHoughLine(vDisparity, lines, thresholdLineThickness);
 
 		// paint detected line
 		line(res, cv::Point(selectedLine[0], selectedLine[1]), cv::Point(selectedLine[2], selectedLine[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
@@ -270,7 +270,7 @@ void Image::ProbabilisticHoughLinesDetection(cv::Vec4i &selectedLine, const doub
 	if (lines.size() > 0)
 	{
 		// find the best line
-		selectedLine = Utils::BestHoughLine(disparity, lines, thresholdLineThickness);
+		selectedLine = Utils::BestHoughLine(vDisparity, lines, thresholdLineThickness);
 
 		// paint detected line
 		line(res, cv::Point(selectedLine[0], selectedLine[1]), cv::Point(selectedLine[2], selectedLine[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
@@ -326,7 +326,7 @@ void Image::CudaHoughLinesDetection(cv::Vec4i &selectedLine, const double thresh
 		}
 
 		// find the best line
-		selectedLine = Utils::BestHoughLine(disparity, lines, thresholdLineThickness);
+		selectedLine = Utils::BestHoughLine(vDisparity, lines, thresholdLineThickness);
 
 		// paint detected line
 		line(res, cv::Point(selectedLine[0], selectedLine[1]), cv::Point(selectedLine[2], selectedLine[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
@@ -361,7 +361,7 @@ void Image::CudaProbabilisticHoughLinesDetection(cv::Vec4i &selectedLine, const 
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();
 
-	cv::Ptr<cv::cuda::HoughSegmentDetector> hough = cv::cuda::createHoughSegmentDetector(1.0f, (float)(CV_PI / 180.0f), 100, 0);
+	cv::Ptr<cv::cuda::HoughSegmentDetector> hough = cv::cuda::createHoughSegmentDetector(1.0f, (float)(CV_PI / 180.0f), 50, 5);
 	hough->detect(d_src, d_lines);
 
 	end = std::chrono::system_clock::now();
@@ -376,17 +376,19 @@ void Image::CudaProbabilisticHoughLinesDetection(cv::Vec4i &selectedLine, const 
 
 	if (!lines_gpu.empty()) {
 		// find the best line
-		selectedLine = Utils::BestHoughLine(disparity, lines_gpu, thresholdLineThickness);
+		selectedLine = Utils::BestHoughLine(vDisparity, lines_gpu, thresholdLineThickness);
+
+
+
+		// paint detected lines
+		for (size_t i = 0; i < lines_gpu.size(); i++)
+		{
+			cv::Vec4i l = lines_gpu[i];
+			line(res, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(255, 0, 0), 1, cv::LINE_AA);
+		}
 
 		// paint detected line
 		line(res, cv::Point(selectedLine[0], selectedLine[1]), cv::Point(selectedLine[2], selectedLine[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
-
-		// paint detected lines
-		//for (size_t i = 0; i < lines_gpu.size(); i++)
-		//{
-		//	cv::Vec4i l = lines_gpu[i];
-		//	line(res, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
-		//}
 	}
 
 	// Mat dst to Qsource result

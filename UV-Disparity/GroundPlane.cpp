@@ -72,6 +72,8 @@ void GroundPlane::paintDrownOnSource(const QImage &image, std::vector<cv::Vec2i>
 
 void GroundPlane::Detect(Image &image, HoughLinesMethods houghLinesMethod, const double thresholdHoughLineThickness, const double thresholdGroundPlaneThickness)
 {
+	static int fileNo = 0;
+
 	QImage disparity = image.getDisparity();
 	QImage source = image.getSource();
 
@@ -100,6 +102,9 @@ void GroundPlane::Detect(Image &image, HoughLinesMethods houghLinesMethod, const
 
 	if (pixels.size() == 0)
 	{
+		drownOnSource = QImage(image.getSource().convertToFormat(QImage::Format_ARGB32_Premultiplied));
+		std::clog << "0 0 0 \n";
+		fileNo++;
 		return;
 	}
 
@@ -144,10 +149,13 @@ void GroundPlane::Detect(Image &image, HoughLinesMethods houghLinesMethod, const
 	cvSolve(matA, matB, res, CV_SVD);
 
 	// ax + by + c = z
+
 	double a, b, c;
 	a = cvmGet(res, 0, 0);
 	b = cvmGet(res, 1, 0);
 	c = cvmGet(res, 2, 0);
+
+	std::clog << a << " " << b << " " << c << '\n';
 
 	// find all 3D points that lie on the plane within a threshold distance
 	std::vector<cv::Vec2i> groundPlanePoints;
@@ -176,8 +184,37 @@ void GroundPlane::Detect(Image &image, HoughLinesMethods houghLinesMethod, const
 
 	paintDetectedPlane(disparity, groundPlanePoints);
 	paintDrownOnSource(source, groundPlanePoints);
+
+	
+	char base[30];
+	sprintf(base, "result_mask_%d.bmp", fileNo);
+	QString filename = QString("..//ResultsSimona//") + base;
+	saveMask(filename, width, height, groundPlanePoints);
+	fileNo++;
 }
 
+void GroundPlane::saveMask(QString filename, int width, int height, std::vector<cv::Vec2i> &points)
+{
+	QImage mask = QImage(width, height, QImage::Format_Mono);
+
+	uint black = qRgb(0, 0, 0);
+	uint white = qRgb(255, 255, 255);
+
+	QVector<QRgb> colorTable;
+	colorTable << black << white;
+
+	mask.setColorTable(colorTable);
+	mask.fill(0);
+
+	for (std::vector<cv::Vec2i>::iterator it = points.begin(); it != points.end(); ++it)
+	{
+		int col = (*it)[0];
+		int row = (*it)[1];
+		//QRgb white = qRgb(255, 255, 255);
+		mask.setPixel(col, row, 1);
+	}
+	mask.save(filename);
+}
 GroundPlane::~GroundPlane()
 {
 }

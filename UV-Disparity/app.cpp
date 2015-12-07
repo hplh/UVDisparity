@@ -6,7 +6,108 @@ App::App(QWidget *parent)
 	ui.setupUi(this);
 	CreateMenus();
 	InitializeComponents();
+
+	filestr.open("..//ResultsSimona//planeEq.txt");
+
+	psbuf = filestr.rdbuf();
+	std::clog.rdbuf(psbuf);
 }
+
+
+// private methods
+void App::CreateMenus()
+{
+	menuBar = new QMenuBar(this);
+	menuBar->setGeometry(QRect(0, 0, 600, 21));
+
+	// file menu
+	fileMenu = new QMenu("File", menuBar);
+	menuBar->addMenu(fileMenu);
+
+	load = new QAction(fileMenu);
+	load->setText("Load");
+	connect(load, SIGNAL(triggered()), this, SLOT(Load()));
+
+	save = new QAction(fileMenu);
+	save->setText("Save");
+	connect(save, SIGNAL(triggered()), this, SLOT(Save()));
+
+	processDirectories = new QAction(fileMenu);
+	processDirectories->setText("Process Directories");
+	connect(processDirectories, SIGNAL(triggered()), this, SLOT(ProcessDirectories()));
+
+	fileMenu->addAction(load);
+	fileMenu->addAction(save);
+	fileMenu->addAction(processDirectories);
+
+	// run menu
+	runMenu = new QMenu("Run", menuBar);
+	menuBar->addMenu(runMenu);
+
+	houghLine = new QAction(runMenu);
+	houghLine->setText("HoughLines");
+	connect(houghLine, SIGNAL(triggered()), this, SLOT(HoughLinesCall()));
+
+	probabilisticHoughLine = new QAction(runMenu);
+	probabilisticHoughLine->setText("PHoughLines");
+	connect(probabilisticHoughLine, SIGNAL(triggered()), this, SLOT(ProbabilisticHoughLinesCall()));
+
+	cudaHoughLine = new QAction(runMenu);
+	cudaHoughLine->setText("CudaHoughLines");
+	connect(cudaHoughLine, SIGNAL(triggered()), this, SLOT(CudaHoughLinesCall()));
+
+	cudaProbabilisticHoughLine = new QAction(runMenu);
+	cudaProbabilisticHoughLine->setText("CudaPHoughLines");
+	connect(cudaProbabilisticHoughLine, SIGNAL(triggered()), this, SLOT(CudaProbabilisticHoughLinesCall()));
+
+	runMenu->addAction(houghLine);
+	runMenu->addAction(probabilisticHoughLine);
+	runMenu->addAction(cudaHoughLine);
+	runMenu->addAction(cudaProbabilisticHoughLine);
+}
+
+void App::InitializeComponents()
+{
+	contentLayout = new QGridLayout(this);
+
+	contentLayout->setMenuBar(menuBar);
+
+	// Labels
+	for (int i = 0; i < labelMatRows; ++i)
+	{
+		for (int j = 0; j < labelMatCols; ++j)
+		{
+			labelMat[i][j] = new QLabel;
+			labelMat[i][j]->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+			labelMat[i][j]->setScaledContents(true);
+			contentLayout->addWidget(labelMat[i][j], i, j);
+		}
+	}
+
+	// hough line thickness threshold slider
+	houghLineThicknessThreshSlider = new QSlider(Qt::Vertical);
+	houghLineThicknessThreshSlider->setRange(0, 20);
+	houghLineThicknessThreshSlider->setValue(1);
+	houghLineThicknessThreshSlider->setTickPosition(QSlider::TicksRight);
+	connect(houghLineThicknessThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(SetHoughLineThicknessThreshSliderValue(int)));
+	contentLayout->addWidget(houghLineThicknessThreshSlider, 2, 3);
+
+	// uv-disparity threshold slider
+	uvDisparityThreshSlider = new QSlider(Qt::Vertical);
+	uvDisparityThreshSlider->setRange(0, 20);
+	uvDisparityThreshSlider->setValue(10);
+	uvDisparityThreshSlider->setTickPosition(QSlider::TicksRight);
+	connect(uvDisparityThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(SetUVDisparityThreshSliderValue(int)));
+	contentLayout->addWidget(uvDisparityThreshSlider, 0, 3);
+
+	image.setUVDisparityThreshold(uvDisparityThreshSlider->value());
+}
+
+App::~App()
+{
+	filestr.close();
+}
+
 
 // slots
 void App::SetHoughLineThicknessThreshSliderValue(int)
@@ -72,22 +173,26 @@ void App::Save()
 	painter.drawImage(groundPlaneOnSource.width(), 0, image.getVDisparityLog());
 	painter.end();
 
-	QString filename = QFileDialog::getSaveFileName(this, tr("Save"), QDir::currentPath(), tr("Documents (*.doc)"));
+	QString filename = QFileDialog::getSaveFileName(this, tr("Save"), QDir::currentPath(), tr("Documents (*.ppm)"));
 
 	result.save(filename);
 }
 
 void App::ProcessDirectories()
 {
-	//QString dirImageRaw = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//";
-	//QString dirImageDisp = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//ELAS disp//";
-	//QString resultImageDisp = "E://UVDisparity//Results//";
-	
-	QString dirImageRaw = "D://sov//images//raw//";
-	QString dirImageDisp = "D://sov//images//disp//";
-	QString resultImageDisp = "D://sov//images//results//";
+	QString dirImageRaw = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//";
+	QString dirImageDisp = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//ELAS disp//";
+	QString resultImageDisp = "E://UVDisparity//Results//";
 
-	uint16_t num_of_frames = 2000;
+	//QString dirImageRaw = "E://Stereo Datasets//KITTI//Sequence15//left_pgm";
+	//QString dirImageDisp = "E://Stereo Datasets//KITTI//Sequence15//left_pgm_disp";
+	//QString resultImageDisp = "E://UVDisparity//ResultsKITTI//";
+	
+	//QString dirImageRaw = "D://sov//images//raw//";
+	//QString dirImageDisp = "D://sov//images//disp//";
+	//QString resultImageDisp = "D://sov//images//results//";
+
+	uint16_t num_of_frames = 100;
 
 	std::chrono::duration<double> elapsed_seconds;
 
@@ -109,6 +214,7 @@ void App::ProcessDirectories()
 		}
 
 		image.Load(QString(sourceFilename.c_str()), QString(dispFilename.c_str()), "");
+		image.setUVDisparityThreshold(uvDisparityThreshSlider->value());
 		image.VDisparity();
 		image.UDisparity();
 		groundPlane.Detect(image, cudaProbabilisticHoughLines, houghLineThicknessThreshSlider->value());
@@ -158,88 +264,7 @@ void App::CudaProbabilisticHoughLinesCall()
 	UpdateLabels();
 }
 
-// private methods
-void App::CreateMenus()
-{
-	menuBar = new QMenuBar(this);
-	menuBar->setGeometry(QRect(0, 0, 600, 21));
-	
-	// file menu
-	fileMenu = new QMenu("File", menuBar);
-	menuBar->addMenu(fileMenu);
 
-	load = new QAction(fileMenu);
-	load->setText("Load");
-	connect(load, SIGNAL(triggered()), this, SLOT(Load()));
-
-	save = new QAction(fileMenu);
-	save->setText("Save");
-	connect(save, SIGNAL(triggered()), this, SLOT(Save()));
-
-	processDirectories = new QAction(fileMenu);
-	processDirectories->setText("Process Directories");
-	connect(processDirectories, SIGNAL(triggered()), this, SLOT(ProcessDirectories()));
-	
-	fileMenu->addAction(load);	
-	fileMenu->addAction(save);
-	fileMenu->addAction(processDirectories);
-
-	// run menu
-	runMenu = new QMenu("Run", menuBar);
-	menuBar->addMenu(runMenu);
-
-	houghLine = new QAction(runMenu);
-	houghLine->setText("HoughLines");
-	connect(houghLine, SIGNAL(triggered()), this, SLOT(HoughLinesCall()));
-
-	probabilisticHoughLine = new QAction(runMenu);
-	probabilisticHoughLine->setText("PHoughLines");
-	connect(probabilisticHoughLine, SIGNAL(triggered()), this, SLOT(ProbabilisticHoughLinesCall()));
-
-	cudaHoughLine = new QAction(runMenu);
-	cudaHoughLine->setText("CudaHoughLines");
-	connect(cudaHoughLine, SIGNAL(triggered()), this, SLOT(CudaHoughLinesCall()));
-
-	cudaProbabilisticHoughLine = new QAction(runMenu);
-	cudaProbabilisticHoughLine->setText("CudaPHoughLines");
-	connect(cudaProbabilisticHoughLine, SIGNAL(triggered()), this, SLOT(CudaProbabilisticHoughLinesCall()));
-
-	runMenu->addAction(houghLine);
-	runMenu->addAction(probabilisticHoughLine);
-	runMenu->addAction(cudaHoughLine);
-	runMenu->addAction(cudaProbabilisticHoughLine);
-}
-
-void App::InitializeComponents()
-{
-	contentLayout = new QGridLayout(this);
-
-	// Labels
-	for (int i = 0; i < labelMatRows; ++i)
-	{
-		for (int j = 0; j < labelMatCols; ++j)
-		{
-			labelMat[i][j] = new QLabel;
-			labelMat[i][j]->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-			labelMat[i][j]->setScaledContents(true);
-			contentLayout->addWidget(labelMat[i][j], i, j);
-		}
-	}
-
-	// hough line thickness threshold slider
-	houghLineThicknessThreshSlider = new QSlider(Qt::Vertical);
-	houghLineThicknessThreshSlider->setRange(0, 20);
-	houghLineThicknessThreshSlider->setTickPosition(QSlider::TicksRight);
-	connect(houghLineThicknessThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(SetHoughLineThicknessThreshSliderValue(int)));
-	contentLayout->addWidget(houghLineThicknessThreshSlider, 2, 3);
-
-	// uv-disparity threshold slider
-	uvDisparityThreshSlider = new QSlider(Qt::Vertical);
-	uvDisparityThreshSlider->setRange(0, 20);
-	uvDisparityThreshSlider->setTickPosition(QSlider::TicksRight);
-	connect(uvDisparityThreshSlider, SIGNAL(valueChanged(int)), this, SLOT(SetUVDisparityThreshSliderValue(int)));
-	contentLayout->addWidget(uvDisparityThreshSlider, 0, 3);
-}
 
 void App::UpdateLabels() {
 	QImage disparity = image.getDisparity();
@@ -313,7 +338,3 @@ void App::UpdateLabels() {
 	}
 }
 
-App::~App()
-{
-
-}
