@@ -28,7 +28,9 @@ public:
 	void paintDetectedPlane(const QImage &image, std::vector<cv::Vec2i> &points);
 	void paintDrownOnSource(const QImage &image, std::vector<cv::Vec2i> &points);
 
-	void Detect(Image &image, HoughLinesMethods houghLinesMethod, const double thresholdHoughLineThickness, const double thresholdGroundPlaneThickness = 0.02);
+	void saveMask(QString filename, int width, int height, std::vector<cv::Vec2i> &groundPlanePoints);
+
+	void Detect(Image &image, HoughLinesMethods houghLinesMethod, const double thresholdHoughLineThickness, const double thresholdGroundPlaneThickness = 0.05);
 
 	~GroundPlane();
 };

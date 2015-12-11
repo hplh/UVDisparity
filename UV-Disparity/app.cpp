@@ -180,19 +180,19 @@ void App::Save()
 
 void App::ProcessDirectories()
 {
-	QString dirImageRaw = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//";
-	QString dirImageDisp = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//ELAS disp//";
-	QString resultImageDisp = "E://UVDisparity//Results//";
+	//QString dirImageRaw = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//2015_0707_raw_pgm//";
+	//QString dirImageDisp = "E://Stereo Datasets//Poland//2015_0707_raw_outdoor//ELAS disp//";
+	//QString resultImageDisp = "E://UVDisparity//Results//";
 
-	//QString dirImageRaw = "E://Stereo Datasets//KITTI//Sequence15//left_pgm";
-	//QString dirImageDisp = "E://Stereo Datasets//KITTI//Sequence15//left_pgm_disp";
-	//QString resultImageDisp = "E://UVDisparity//ResultsKITTI//";
+	QString dirImageRaw = "E://Stereo Datasets//KITTI//Sequence15//left_pgm//";
+	QString dirImageDisp = "E://Stereo Datasets//KITTI//Sequence15//left_pgm_disp//";
+	QString resultImageDisp = "E://UVDisparity//ResultsKITTI2//";
 	
 	//QString dirImageRaw = "D://sov//images//raw//";
 	//QString dirImageDisp = "D://sov//images//disp//";
 	//QString resultImageDisp = "D://sov//images//results//";
 
-	uint16_t num_of_frames = 100;
+	uint16_t num_of_frames = 2000;
 
 	std::chrono::duration<double> elapsed_seconds;
 
@@ -200,13 +200,18 @@ void App::ProcessDirectories()
 
 		// input file names
 		char sourceBasename[256];
-		sprintf(sourceBasename, "%d.pgm", i);
+		//sprintf(sourceBasename, "%d.pgm", i);
+		sprintf(sourceBasename, "%06d.pgm", i);
 
 		char dispBasename[256];
-		sprintf(dispBasename, "%d_disp.pgm", i);
+		//sprintf(dispBasename, "%d_disp.pgm", i);
+		sprintf(dispBasename, "%06d_disp.pgm", i);
 
-		std::string sourceFilename = dirImageRaw.toStdString() + "/left_" + sourceBasename;
-		std::string dispFilename = dirImageDisp.toStdString() + "/left_" + dispBasename;
+		//std::string sourceFilename = dirImageRaw.toStdString() + "/left_" + sourceBasename;
+		//std::string dispFilename = dirImageDisp.toStdString() + "/left_" + dispBasename;
+
+		std::string sourceFilename = dirImageRaw.toStdString() + sourceBasename;
+		std::string dispFilename = dirImageDisp.toStdString() +  dispBasename;
 
 		if (!QFile(QString(dispFilename.c_str())).exists() || !QFile(QString(sourceFilename.c_str())).exists())
 		{

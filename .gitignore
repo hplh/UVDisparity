@@ -193,3 +193,5 @@ UV-Disparity/UV-Disparity.vcxproj.filters
 UV-Disparity/GeneratedFiles/qrc_app.cpp
 *.png
 *.pgm
+*.bmp
+*.txt

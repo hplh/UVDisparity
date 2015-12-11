@@ -1,6 +1,9 @@
 #ifndef APP_H
 #define APP_H
 
+#include <iostream>
+#include <fstream>
+
 #include <QtWidgets/QWidget>
 #include <QMenuBar>
 #include <QMenu>
@@ -65,6 +68,9 @@ private:
 	void CreateMenus();
 	void InitializeComponents();
 	void UpdateLabels();
+
+	std::streambuf *psbuf;
+	std::ofstream filestr;
 };
 
 #endif // APP_H
