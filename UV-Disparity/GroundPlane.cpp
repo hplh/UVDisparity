@@ -97,100 +97,104 @@ void GroundPlane::Detect(Image &image, HoughLinesMethods houghLinesMethod, const
 		break;
 	}
 
-	// find pixels in disparity image coresponding to detected line in vDisparity
+	auto start_time = std::chrono::high_resolution_clock::now();
+
+	// find pixels in disparity image corresponding to detected line in vDisparity
 	std::vector<cv::Vec2i> pixels = Utils::HoughLineToImagePixels(disparity, line, thresholdHoughLineThickness);
 
-	if (pixels.size() == 0)
+	if (pixels.size() != 0)
+	{
+		// fit plane in the 3D point cloud formed by the found ground plane pixels
+		// build 3D point cloud
+		std::vector <cv::Vec3f> pointCloud;
+		for (std::vector<cv::Vec2i>::iterator it = pixels.begin(); it != pixels.end(); ++it)
+		{
+			int u = (*it)[0];
+			int v = (*it)[1];
+			double x, y, z;
+			int gray = qGray(disparity.pixel(u, v));
+			if (gray != 0)
+			{
+				z = f * B / gray;
+				x = ((double)u - c_u) * z / f;
+				y = ((double)v - c_v) * z / f;
+				pointCloud.push_back(cv::Vec3f(x, y, z));
+			}
+		}
+
+		// find least squared plane
+		CvMat *res = cvCreateMat(3, 1, CV_32FC1); // a, b, c for plane ax + by + c = 0;
+		// matA * res = matB;
+		CvMat *matA = cvCreateMat(pointCloud.size(), 3, CV_32FC1);
+		CvMat *matB = cvCreateMat(pointCloud.size(), 1, CV_32FC1);
+		int i = 0;
+		for (std::vector<cv::Vec3f>::iterator it = pointCloud.begin(); it != pointCloud.end(); ++it)
+		{
+			cvmSet(matA, i, 0, (*it)[0]);
+			cvmSet(matA, i, 1, (*it)[1]);
+			cvmSet(matA, i, 2, 1);
+
+			cvmSet(matB, i, 0, (*it)[2]);
+
+			++i;
+		}
+
+		// solve the ecuation matA * res = matB;
+		cvSolve(matA, matB, res, CV_SVD);
+
+		// ax + by + c = z
+
+		double a, b, c;
+		a = cvmGet(res, 0, 0);
+		b = cvmGet(res, 1, 0);
+		c = cvmGet(res, 2, 0);
+
+		auto end_time = std::chrono::high_resolution_clock::now();
+		std::cout << "GP equation takes: " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << std::endl;
+
+		std::clog << a << " " << b << " " << c << '\n';
+
+		// find all 3D points that lie on the plane within a threshold distance
+		std::vector<cv::Vec2i> groundPlanePoints;
+		for (int row = 0; row < height; ++row)
+		{
+			for (int col = 0; col < width; ++col)
+			{
+				double x, y, z, dist;
+				int gray = qGray(disparity.pixel(col, row));
+
+				if (gray != 0)
+				{
+					z = f * B / gray;
+					x = ((double)col - c_u) * z / f;
+					y = ((double)row - c_v) * z / f;
+
+					dist = fabs(a * x + b * y - z + c) / sqrt(a * a + b * b + c * c);
+
+					if (dist <= thresholdGroundPlaneThickness)
+					{
+						groundPlanePoints.push_back(cv::Vec2i(col, row));
+					}
+				}
+			}
+		}
+
+		paintImagePixelsFromHoughLine(disparity, pixels);
+		paintDetectedPlane(disparity, groundPlanePoints);
+		paintDrownOnSource(source, groundPlanePoints);
+
+		char base[30];
+		sprintf(base, "result_mask_%d.bmp", fileNo);
+		QString filename = QString("..//ResultsSimona//") + base;
+		saveMask(filename, width, height, groundPlanePoints);
+		fileNo++;
+	} 
+	else
 	{
 		drownOnSource = QImage(image.getSource().convertToFormat(QImage::Format_ARGB32_Premultiplied));
 		std::clog << "0 0 0 \n";
 		fileNo++;
-		return;
 	}
-
-	paintImagePixelsFromHoughLine(disparity, pixels);
-
-	// fit plane in the 3D point cloud formed by the found ground plane pixels
-	// build 3D point cloud
-	std::vector <cv::Vec3f> pointCloud;
-	for (std::vector<cv::Vec2i>::iterator it = pixels.begin(); it != pixels.end(); ++it)
-	{
-		int u = (*it)[0];
-		int v = (*it)[1];
-		double x, y, z;
-		int gray = qGray(disparity.pixel(u, v));
-		if (gray != 0)
-		{
-			z = f * B / gray;
-			x = ((double)u - c_u) * z / f;
-			y = ((double)v - c_v) * z / f;
-			pointCloud.push_back(cv::Vec3f(x, y, z));
-		}
-	}
-
-	// find least squared plane
-	CvMat *res = cvCreateMat(3, 1, CV_32FC1); // a, b, c for plane ax + by + c = 0;
-	// matA * res = matB;
-	CvMat *matA = cvCreateMat(pointCloud.size(), 3, CV_32FC1);
-	CvMat *matB = cvCreateMat(pointCloud.size(), 1, CV_32FC1);
-	int i = 0;
-	for (std::vector<cv::Vec3f>::iterator it = pointCloud.begin(); it != pointCloud.end(); ++it)
-	{
-		cvmSet(matA, i, 0, (*it)[0]);
-		cvmSet(matA, i, 1, (*it)[1]);
-		cvmSet(matA, i, 2, 1);
-
-		cvmSet(matB, i, 0, (*it)[2]);
-
-		++i;
-	}
-
-	// solve the ecuation matA * res = matB;
-	cvSolve(matA, matB, res, CV_SVD);
-
-	// ax + by + c = z
-
-	double a, b, c;
-	a = cvmGet(res, 0, 0);
-	b = cvmGet(res, 1, 0);
-	c = cvmGet(res, 2, 0);
-
-	std::clog << a << " " << b << " " << c << '\n';
-
-	// find all 3D points that lie on the plane within a threshold distance
-	std::vector<cv::Vec2i> groundPlanePoints;
-	for (int row = 0; row < height; ++row)
-	{
-		for (int col = 0; col < width; ++col)
-		{
-			double x, y, z, dist;
-			int gray = qGray(disparity.pixel(col, row));
-
-			if (gray != 0)
-			{
-				z = f * B / gray;
-				x = ((double)col - c_u) * z / f;
-				y = ((double)row - c_v) * z / f;
-
-				dist = fabs(a * x + b * y - z + c) / sqrt(a * a + b * b + c * c);
-
-				if (dist <= thresholdGroundPlaneThickness)
-				{
-					groundPlanePoints.push_back(cv::Vec2i(col, row));
-				}
-			}
-		}
-	}
-
-	paintDetectedPlane(disparity, groundPlanePoints);
-	paintDrownOnSource(source, groundPlanePoints);
-
-	
-	char base[30];
-	sprintf(base, "result_mask_%d.bmp", fileNo);
-	QString filename = QString("..//ResultsSimona//") + base;
-	saveMask(filename, width, height, groundPlanePoints);
-	fileNo++;
 }
 
 void GroundPlane::saveMask(QString filename, int width, int height, std::vector<cv::Vec2i> &points)

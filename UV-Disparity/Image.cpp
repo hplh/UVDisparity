@@ -85,34 +85,59 @@ void Image::VDisparity()
 	// calculate VDisparity
 	if (mask.isNull())
 	{
-		
+		unsigned char** vDispMap;
+		int size = height - startRow;
+		vDispMap = new unsigned char*[size];
+
+		for (int i = 0; i < size; ++i)
+		{
+			vDispMap[i] = new unsigned char[256]();
+		}
+
+		auto start_time = std::chrono::high_resolution_clock::now();
+
 		for (int row = startRow; row < height; ++row)
 		{
-			unsigned char rowHistogram[256] = { 0 };
+			int index = row - startRow;
 			for (int col = 0; col < width; ++col)
 			{
 				int gray = qGray(disparity.pixel(col, row));
 
 				if (gray != 255 && gray > 5)
 				{
-					++rowHistogram[gray];
+					++vDispMap[index][gray];
 				}
 			}
+		}
 
+		auto end_time = std::chrono::high_resolution_clock::now();
+		std::cout << "V-Disparity takes: " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << std::endl;
+
+		for (int row = startRow; row < height; ++row)
+		{
+			int index = row - startRow;
 			for (int col = 0; col < 256; ++col)
 			{
-				if (rowHistogram[col] < uvDisparityThreshold)
+				if (vDispMap[index][col] < uvDisparityThreshold)
 				{
-					rowHistogram[col] = 0;
+					vDispMap[index][col] = 0;
 				}
-			
-				vDisparity.setPixel(col, row, QColor(rowHistogram[col], rowHistogram[col], rowHistogram[col]).rgb());
 
-				double colorVal = log(rowHistogram[col] + 1) / log(max) * 255;
+				vDisparity.setPixel(col, row, QColor(vDispMap[index][col], vDispMap[index][col], vDispMap[index][col]).rgb());
+
+				double colorVal = log(vDispMap[index][col] + 1) / log(max) * 255;
 				vDisparityLog.setPixel(col, row, QColor(colorVal, colorVal, colorVal).rgb());
 			}
 		}
+
+		for (int i = 0; i < size; ++i)
+		{
+			delete[] vDispMap[i];
+		}
+
+		delete[] vDispMap;
 	}
+
 	else
 	{
 		for (int row = 0; row < height; ++row)
@@ -134,7 +159,7 @@ void Image::VDisparity()
 				{
 					rowHistogram[col] = 0;
 				}
-				
+
 				vDisparity.setPixel(col, row, QColor(rowHistogram[col], rowHistogram[col], rowHistogram[col]).rgb());
 
 				double colorVal = log(rowHistogram[col] + 1) / log(max) * 255;
@@ -364,8 +389,6 @@ void Image::CudaProbabilisticHoughLinesDetection(cv::Vec4i &selectedLine, const 
 	cv::Ptr<cv::cuda::HoughSegmentDetector> hough = cv::cuda::createHoughSegmentDetector(1.0f, (float)(CV_PI / 180.0f), 50, 5);
 	hough->detect(d_src, d_lines);
 
-	end = std::chrono::system_clock::now();
-
 	std::vector<cv::Vec4i> lines_gpu;
 	if (!d_lines.empty())
 	{
@@ -378,7 +401,8 @@ void Image::CudaProbabilisticHoughLinesDetection(cv::Vec4i &selectedLine, const 
 		// find the best line
 		selectedLine = Utils::BestHoughLine(vDisparity, lines_gpu, thresholdLineThickness);
 
-
+		end = std::chrono::system_clock::now();
+		std::cout << "Hough Transform and Line selection takes: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
 
 		// paint detected lines
 		for (size_t i = 0; i < lines_gpu.size(); i++)
