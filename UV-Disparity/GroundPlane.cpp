@@ -150,7 +150,7 @@ void GroundPlane::Detect(Image &image, HoughLinesMethods houghLinesMethod, const
 		c = cvmGet(res, 2, 0);
 
 		auto end_time = std::chrono::high_resolution_clock::now();
-		std::cout << "GP equation takes: " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << std::endl;
+		std::clog << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << ' ';
 
 		std::clog << a << " " << b << " " << c << '\n';
 
@@ -185,14 +185,14 @@ void GroundPlane::Detect(Image &image, HoughLinesMethods houghLinesMethod, const
 
 		char base[30];
 		sprintf(base, "result_mask_%d.bmp", fileNo);
-		QString filename = QString("..//ResultsSimona//") + base;
+		QString filename = QString("..//Results//") + base;
 		saveMask(filename, width, height, groundPlanePoints);
 		fileNo++;
 	} 
 	else
 	{
 		drownOnSource = QImage(image.getSource().convertToFormat(QImage::Format_ARGB32_Premultiplied));
-		std::clog << "0 0 0 \n";
+		std::clog << "0 0 0 0 \n";
 		fileNo++;
 	}
 }

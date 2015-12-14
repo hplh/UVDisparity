@@ -7,12 +7,11 @@ App::App(QWidget *parent)
 	CreateMenus();
 	InitializeComponents();
 
-	filestr.open("..//ResultsSimona//planeEq.txt");
+	filestr.open("..//ResultsTime//planeEqTime.txt");
 
 	psbuf = filestr.rdbuf();
 	std::clog.rdbuf(psbuf);
 }
-
 
 // private methods
 void App::CreateMenus()
@@ -186,13 +185,13 @@ void App::ProcessDirectories()
 
 	QString dirImageRaw = "E://Stereo Datasets//KITTI//Sequence15//left_pgm//";
 	QString dirImageDisp = "E://Stereo Datasets//KITTI//Sequence15//left_pgm_disp//";
-	QString resultImageDisp = "E://UVDisparity//ResultsKITTI2//";
+	QString resultImageDisp = "E://UVDisparity//ResultsTime//";
 	
 	//QString dirImageRaw = "D://sov//images//raw//";
 	//QString dirImageDisp = "D://sov//images//disp//";
 	//QString resultImageDisp = "D://sov//images//results//";
 
-	uint16_t num_of_frames = 2000;
+	uint16_t num_of_frames = 20000;
 
 	std::chrono::duration<double> elapsed_seconds;
 

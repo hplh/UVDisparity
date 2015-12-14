@@ -111,7 +111,7 @@ void Image::VDisparity()
 		}
 
 		auto end_time = std::chrono::high_resolution_clock::now();
-		std::cout << "V-Disparity takes: " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << std::endl;
+		std::clog  << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << ' ';
 
 		for (int row = startRow; row < height; ++row)
 		{
@@ -402,7 +402,7 @@ void Image::CudaProbabilisticHoughLinesDetection(cv::Vec4i &selectedLine, const 
 		selectedLine = Utils::BestHoughLine(vDisparity, lines_gpu, thresholdLineThickness);
 
 		end = std::chrono::system_clock::now();
-		std::cout << "Hough Transform and Line selection takes: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << std::endl;
+		std::clog << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << ' ';
 
 		// paint detected lines
 		for (size_t i = 0; i < lines_gpu.size(); i++)
@@ -414,6 +414,8 @@ void Image::CudaProbabilisticHoughLinesDetection(cv::Vec4i &selectedLine, const 
 		// paint detected line
 		line(res, cv::Point(selectedLine[0], selectedLine[1]), cv::Point(selectedLine[2], selectedLine[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
 	}
+	else
+		std::clog << "0 ";
 
 	// Mat dst to Qsource result
 	vDisparityLog = QImage((uchar *)res.data, res.cols, res.rows, res.step, QImage::Format_RGB888).rgbSwapped();
